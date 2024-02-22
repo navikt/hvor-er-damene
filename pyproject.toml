@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "teamkat-hist"
+version = "0.1.0"
+description = ""
+authors = ["caroliwi <caroline.winther@nav.no>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.0"
+gender-guesser = "^0.4.0"
+openpyxl = "^3.1.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
