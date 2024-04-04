@@ -3,7 +3,7 @@ import airflow
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import timedelta
-from scripts import monthly_snapshot
+import monthly_snapshot
 
 default_args = {
     'start_date': airflow.utils.dates.days_ago(0),

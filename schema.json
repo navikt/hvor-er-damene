@@ -1,0 +1,18 @@
+{
+  "monthly_snapshot_raw":[
+    {"name":"Tilknyttning","type":"string"},
+    {"name":"Omraade","type":"string"},
+    {"name":"Klynge","type":"string"},
+    {"name":"Team","type":"string"},
+    {"name":"Ident","type":"string"},
+    {"name":"Fornavn","type":"string"},
+    {"name":"Etternavn","type":"string"},
+    {"name":"Type","type":"string"},
+    {"name":"Roller","type":"string"},
+    {"name":"Annet","type":"string"},
+    {"name":"Epost","type":"string"},
+    {"name":"Startdato","type":"string"},
+    {"name":"Sluttdato","type":"string"},
+    {"name":"lastet_dato","type":"date"}
+  ]
+}
