@@ -1,3 +1,8 @@
 /install_certifi.py
 .idea/
+hist_data/
+
+.DS_Store
+__pycache__/
+
 

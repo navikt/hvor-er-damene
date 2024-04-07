@@ -14,5 +14,38 @@
     {"name":"Startdato","type":"string"},
     {"name":"Sluttdato","type":"string"},
     {"name":"lastet_dato","type":"date"}
+  ],
+  "teamkat_gender_pred":[
+    {"name":"dato_mnd","type":"date"},
+    {"name":"Ident","type":"string"},
+    {"name":"Omraade","type":"string"},
+    {"name":"Team","type":"string"},
+    {"name":"Roller","type":"string"},
+    {"name":"Type","type":"string"},
+    {"name":"for_navn","type":"string"},
+    {"name":"gender_pred","type":"string"}
+  ],
+  "omraade_rolle_stats": [
+    {"name":"dato_mnd","type":"date"},
+    {"name":"Omraade","type":"string"},
+    {"name":"Rolle","type":"string"},
+    {"name":"antall_totalt","type":"integer"},
+    {"name":"antall_kvinner","type":"integer"},
+    {"name":"antall_ukjent","type":"integer"}
+  ],
+  "rolle_stats": [
+    {"name":"dato_mnd","type":"date"},
+    {"name":"Rolle","type":"string"},
+    {"name":"antall_totalt","type":"integer"},
+    {"name":"antall_kvinner","type":"integer"},
+    {"name":"antall_ukjent","type":"integer"}
+  ],
+  "omraade_stats": [
+    {"name":"dato_mnd","type":"date"},
+    {"name":"Omraade","type":"string"},
+    {"name":"antall_totalt","type":"integer"},
+    {"name":"antall_kvinner","type":"integer"},
+    {"name":"antall_ukjent","type":"integer"}
   ]
+
 }
