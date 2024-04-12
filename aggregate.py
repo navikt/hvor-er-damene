@@ -27,13 +27,11 @@ cols_omraade_rolle = ['dato_mnd', 'Omraade', 'Rolle', 'antall_totalt', 'antall_k
 cols_rolle = ['dato_mnd', 'Rolle', 'antall_totalt', 'antall_kvinner', 'antall_ukjent']
 cols_omraade = ['dato_mnd', 'Omraade', 'antall_totalt', 'antall_kvinner', 'antall_ukjent']
 
-
 df_list_omraade_rolle = []
 df_list_rolle = []
 df_list_omraade = []
 
 roller_list = np.unique(sum(df['Roller'].str.split(', ').dropna().to_numpy(), []))
-omraader_list = df.Omraade.unique()
 
 for mnd in datelist:
     df_mnd = df[df['dato_mnd'] == mnd]
@@ -55,13 +53,13 @@ df_mnd_total = df_mnd_total[cols_omraade]
 
 
 df_rolle_omraadeT = pd.concat(df_list_omraade_rolle)
-df_rolle_omraade = df_rolle_omraadeT.pivot(index = ['dato_mnd','Rolle', 'Omraade'],columns = 'gender_pred',values = 'Antall').reset_index()
+df_rolle_omraade = df_rolle_omraadeT.pivot(index = ['dato_mnd','Rolle', 'Omraade'],columns = 'gender_pred',values = 'Antall').reset_index().fillna(0)
 df_rolle_omraade['Total'] = df_rolle_omraade['female']+ df_rolle_omraade['male']+ df_rolle_omraade['unknown']
 df_rolle_omraade.rename(columns={'Total': 'antall_totalt', 'female': 'antall_kvinner','unknown': 'antall_ukjent'}, inplace=True)
 df_rolle_omraade = df_rolle_omraade[cols_omraade_rolle]
 
 df_rolle = df_rolle_omraadeT.groupby(["dato_mnd", "Rolle", "gender_pred"]).sum("Antall").reset_index()
-df_rolle = df_rolle.pivot(index = ['dato_mnd','Rolle'],columns = 'gender_pred',values = 'Antall').reset_index()
+df_rolle = df_rolle.pivot(index = ['dato_mnd','Rolle'],columns = 'gender_pred',values = 'Antall').reset_index().fillna(0)
 df_rolle['Total'] = df_rolle['female']+ df_rolle['male']+ df_rolle['unknown']
 df_rolle.rename(columns={'Total': 'antall_totalt', 'female': 'antall_kvinner','unknown': 'antall_ukjent'}, inplace=True)
 df_rolle = df_rolle[cols_rolle]

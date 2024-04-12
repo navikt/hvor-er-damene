@@ -1,0 +1,24 @@
+---
+title: "Dashbord for kvinneandel i NAV"
+author: "Caroline Winther og Aurora Christine Hofman"
+format: dashboard
+---
+
+```{python}
+import plotly.express as px
+from make_plots import make_omraade_bar_chart, make_roller_line_chart
+```
+
+## Row {height=60%}
+
+```{python}
+#| title: Områder i Teamkatalogen
+make_omraade_bar_chart()
+```
+
+## Row {height=40%}
+
+```{python}
+#| title: Roller i Teamkatalogen
+make_roller_line_chart()
+```

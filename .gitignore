@@ -6,3 +6,5 @@ hist_data/
 __pycache__/
 
 
+make_dashboard_files/
+make_dashboard.html
