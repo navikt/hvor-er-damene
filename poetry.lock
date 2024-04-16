@@ -2043,6 +2043,20 @@ plugins = ["importlib-metadata"]
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pyjstat"
+version = "2.4.0"
+description = "Library to handle JSON-stat data in python using pandas DataFrames."
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyjstat-2.4.0.tar.gz", hash = "sha256:dd7fc7b4ed0892fb949ff87eeea3e2c838754eef43922b40ba3c38fadfc30795"},
+]
+
+[package.dependencies]
+pandas = "*"
+requests = "*"
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -2793,4 +2807,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "890cbda1de6f923747b88926e91dc5bf0957f8817954cdf2fd87b4f5dd23c22d"
+content-hash = "4c07704da4eb0ae0cd7112b6f0ac49668dbfb6d58329610c2335013ad1140348"

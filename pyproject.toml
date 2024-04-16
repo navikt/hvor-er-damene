@@ -15,6 +15,7 @@ pyarrow = "^15.0.2"
 db-dtypes = "^1.2.0"
 plotly = "^5.20.0"
 jupyter = "^1.0.0"
+pyjstat = "^2.4.0"
 
 
 [build-system]

@@ -1,24 +1,84 @@
 ---
-title: "Dashbord for kvinneandel i NAV"
-author: "Caroline Winther og Aurora Christine Hofman"
-format: dashboard
+title: "Hvor er damene?"
+author: ""
+format:
+    dashboard:
+        nav-buttons: [github]
 ---
+# Fakta om kvinner i tech
+
+
+## Row {height=10%}
+
+```{python}
+#| content: valuebox
+#| title: "Kvinneandel ansatt utviklingsseksjonene NAV IT mars 2024"
+
+dict(
+  icon = "emoji-expressionless",
+  color = "primary",
+  value = "15%",
+)
+```
+```{python}
+#| content: valuebox
+#| title: "Kvinneandel yrke 'Rådgiver IKT' 2023K4 (SSB)"
+
+dict(
+  icon = "emoji-smile",
+  color = "secondary",
+  value = "23.6%",
+)
+```
+```{python}
+#| content: valuebox
+#| title: "Kvinneandel studieplass IKT-studier 2023 (Samordna opptak)"
+
+dict(
+  icon = "emoji-heart-eyes",
+  color = "success",
+  value = "37.1%",
+)
+```
+## Row {height=40%}
+```{python}
+#| title: SSB IKT-Rådgivere kvinneandel
+from ssb_plots import make_ssb_yrke_plot, make_sopptak_chart
+make_ssb_yrke_plot()
+```
+```{python}
+#| title: Samordna opptak IKT studier - kvinneandel blant tilbud om studieplass
+make_sopptak_chart()
+```
+
+<!-- Ny tab ------------------------------------------------------------------------->
+# Teamkatalogen data
+
+## Row {height=10%}
+::: {.card title="Om dataen"}
+Data er uttrekk fra [Teamkatalogen](https://teamkatalog.nav.no/), og det er kun snapshot-historikk av ansatte listet i teamkatalogen (ingen kobling til NOM).
+Python-pakken [gender-guesser](https://pypi.org/project/gender-guesser/) er brukt for å predikere kjønn basert på første fornavn, så feilkjønning vil kunne skje.
+Dersom en person har tilhørighet i flere team, er det kun det første teamet som er tatt med i uttrekket.
+:::
 
 ```{python}
 import plotly.express as px
 from make_plots import make_omraade_bar_chart, make_roller_line_chart
 ```
 
-## Row {height=60%}
+## Row {height=50%}
 
 ```{python}
-#| title: Områder i Teamkatalogen
+#| title: Kvinneandel per område
 make_omraade_bar_chart()
 ```
 
-## Row {height=40%}
+## Row {height=50%}
 
 ```{python}
-#| title: Roller i Teamkatalogen
+#| title: Kvinneandel per rolle
 make_roller_line_chart()
 ```
+
+<!-- Ny tab ------------------------------------------------------------------------->
+# Rekruttering i NAV IT
