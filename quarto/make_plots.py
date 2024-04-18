@@ -34,7 +34,8 @@ def make_omraade_bar_chart(bq_table = 'omraade_stats'):
                  y=["Kvinneandel","Ukjentandel"],
                  hover_data=["antall_totalt"],
                  labels={"value": "", "variable": "", "Omraade": ""},
-                 color_discrete_sequence=colours)
+                 color_discrete_sequence=colours,
+                 title = f"uttrekk per {max_dato}")
     fig.update_layout(xaxis={'categoryorder':'total ascending'})
 
     return fig
@@ -55,5 +56,6 @@ def make_roller_line_chart(bq_table = 'rolle_stats'):
                    x="dato_mnd", y="Kvinneandel", color="Rolle",
                    hover_data=["antall_totalt"],
                    labels={"Kvinneandel": "", "dato_mnd": ""},
+                  category_orders={"Rolle": ["Jurist", "Designer", "Data scientist", "Data engineer",  "Teknisk rådgiver",  "Drift", "Utvikler", "Security champion","Tech lead",]},
                    markers=True)
     return fig

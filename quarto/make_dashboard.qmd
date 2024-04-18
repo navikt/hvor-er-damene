@@ -3,6 +3,7 @@ title: "Hvor er damene?"
 author: ""
 format:
     dashboard:
+        embed-resources: true
         nav-buttons: [github]
 ---
 # Fakta om kvinner i tech
@@ -82,3 +83,14 @@ make_roller_line_chart()
 
 <!-- Ny tab ------------------------------------------------------------------------->
 # Rekruttering i NAV IT
+
+```{python}
+from rekruttering import make_stilling_plot
+```
+
+## Row {height=100%}
+
+```{python}
+#| title: Kvinneandel per stilling - søkere og ansatt
+make_stilling_plot()
+```
