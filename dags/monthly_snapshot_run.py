@@ -7,7 +7,7 @@ image = "ghcr.io/navikt/dvh-images/airflow-etl-spenn:2024-02-22-e47954f"
 
 dag_name = "monthly_snapshot_run"
 default_args = {
-    "owner": "spenn",
+    "owner": "heda",
     "start_date": datetime(2024, 4, 25),
     "depends_on_past": False,
 }
