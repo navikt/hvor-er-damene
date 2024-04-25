@@ -6,24 +6,24 @@ format:
         embed-resources: true
         nav-buttons: [github]
 ---
-# Fakta om kvinner i tech
+# Kvinneandel i tech
 
 
 ## Row {height=10%}
 
 ```{python}
 #| content: valuebox
-#| title: "Kvinneandel ansatt utviklingsseksjonene NAV IT mars 2024"
+#| title: "Utvikling og data NAV IT mars 2024"
 
 dict(
   icon = "emoji-expressionless",
   color = "primary",
-  value = "15%",
+  value = "19.2%",
 )
 ```
 ```{python}
 #| content: valuebox
-#| title: "Kvinneandel yrke 'Rådgiver IKT' 2023K4 (SSB)"
+#| title: "Programvare- og applikasjonsutviklere/analytikere 2023K4 (SSB)"
 
 dict(
   icon = "emoji-smile",
@@ -33,7 +33,7 @@ dict(
 ```
 ```{python}
 #| content: valuebox
-#| title: "Kvinneandel studieplass IKT-studier 2023 (Samordna opptak)"
+#| title: "Studieplass IKT-studier 2023 (Samordna opptak)"
 
 dict(
   icon = "emoji-heart-eyes",

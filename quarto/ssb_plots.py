@@ -44,9 +44,9 @@ def _get_data_api():
         {
           "code": "Yrke",
           "selection": {
-            "filter": "vs:NYK08yrkeregsys2",
+            "filter": "vs:NYK08yrkeregsys3",
             "values": [
-              "25"
+              "251"
             ]
           }
         },
@@ -127,5 +127,5 @@ def make_sopptak_chart():
     return fig
 
 if __name__ == "__main__":
-    fig = make_sopptak_chart()
+    fig = make_ssb_yrke_plot()
     fig.show()
