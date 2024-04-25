@@ -1,30 +1,34 @@
-"""A liveness prober dag for monitoring composer.googleapis.com/environment/healthy."""
-import airflow
+from datetime import datetime
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from datetime import timedelta
-import monthly_snapshot
 
+from dataverk_airflow import python_operator
+
+image = "ghcr.io/navikt/dvh-images/airflow-etl-spenn:2024-02-22-e47954f"
+
+dag_name = "monthly_snapshot_run"
 default_args = {
-    'start_date': airflow.utils.dates.days_ago(0),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    "owner": "spenn",
+    "start_date": datetime(2024, 4, 25),
+    "depends_on_past": False,
 }
 
+allowlist = ["secretmanager.googleapis.com", "bigquery.googleapis.com", "teamkatalog-api.intern.nav.no"]
+
 with DAG(
-    'monthly_snapshot_run',
+    dag_name,
     default_args=default_args,
-    description='kopierer til bigquery månedlig',
-    schedule_interval='@once',
-    max_active_runs=2,
-    catchup=False,
-    dagrun_timeout=timedelta(minutes=10)) as dag:
+    schedule_interval="@once",
+) as dag:
 
-
-    snapshot = PythonOperator(
-        task_id='snapshot',
-        python_callable=monthly_snapshot.main,
+    insert_monthly_snapshot_raw = python_operator(
         dag=dag,
-        depends_on_past=False,
-        do_xcom_push=False)
+        name="insert_monthly_snapshot_raw",
+        script_path="monthly_snapshot.py",
+        repo="navikt/hvor-er-damene",
+        branch="main",
+        slack_channel="#heda",
+        allowlist=allowlist,
+        image=image,
+    )
 
+insert_monthly_snapshot_raw
