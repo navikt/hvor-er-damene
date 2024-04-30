@@ -26,7 +26,7 @@ with DAG(
         script_path="monthly_snapshot.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        slack_channel="#heda",
+        #slack_channel="#heda",
         allowlist=allowlist,
         image=image,
     )
