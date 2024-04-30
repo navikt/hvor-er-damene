@@ -20,7 +20,7 @@ def main():
     if this_month in ld_df.lastet_dato.values:
         print("month already loaded")
     else:
-        print("loading month" + str(this_month)
+        print("loading month" + str(this_month))
 
         # Get data from Teamkatalogen
         df = get_teamkatalogen_data()
