@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.express as px
 import sys
 sys.path.append("..")
-from funksjoner import create_client
+from teamkatalogen_bq.funksjoner import create_client
 
 PROJECT_ID = 'heda-prod-2664'
 SA_KEY_NAME = 'heda-access-key'
