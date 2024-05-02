@@ -1,6 +1,5 @@
 import pandas as pd
-import json
-from datetime import date,datetime
+from datetime import date
 
 from funksjoner import create_client, get_teamkatalogen_data, write_to_BQ
 

@@ -21,11 +21,11 @@ def get_current_employees(df):
 
 def set_unknown_gender(df):
     fnames = []
-    with open('navn/female_names.txt', 'r') as f:
+    with open('../navn/female_names.txt', 'r') as f:
         for line in f:
             fnames.append(line.strip())
     mnames = []
-    with open('navn/male_names.txt', 'r') as f:
+    with open('../navn/male_names.txt', 'r') as f:
         for line in f:
             mnames.append(line.strip())
     df.loc[df['for_navn'].isin(fnames), 'gender_pred'] = 'female'
