@@ -25,7 +25,7 @@ def main():
         df = get_teamkatalogen_data()
 
         # Process data
-        df['lastet_dato'] = date.today()
+        df['lastet_dato'] = date.today().replace(day=1)
         df.rename(columns={'Område': 'Omraade'}, inplace=True)
 
         # Write data to BigQuery
