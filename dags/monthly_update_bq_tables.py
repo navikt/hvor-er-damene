@@ -28,7 +28,7 @@ with DAG(
         branch="main",
         #slack_channel="#heda",
         allowlist=allowlist,
-        image=image,
+        requirements_path = "requirements.txt"
     )
     process_snapshot = python_operator(
         dag=dag,
@@ -38,7 +38,7 @@ with DAG(
         branch="main",
         #slack_channel="#heda",
         allowlist=allowlist,
-        image=image,
+        requirements_path = "requirements.txt"
     )
     aggregate = python_operator(
         dag=dag,
@@ -48,7 +48,7 @@ with DAG(
         branch="main",
         #slack_channel="#heda",
         allowlist=allowlist,
-        image=image,
+        requirements_path = "requirements.txt"
     )
 
 insert_monthly_snapshot_raw >> process_snapshot >> aggregate
