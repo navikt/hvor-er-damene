@@ -46,7 +46,7 @@ def make_stilling_plot():
     fig_pers = px.bar(df_agg, x="Søknadsfrist", y=["kvinneandel_ansatt", "kvinneandel_søkere"],
                       barmode='group',color_discrete_sequence=colours,
                       title="Kvinneandel søknader og ansettelser til utviklerstillinger i IT per kvartal",
-                      labels={"value": "Kvinneandel", "Søknadsfrist": "", "Variable": ""})
+                      labels={"value": "Kvinneandel", "Søknadsfrist": "", "variable": ""})
     return [fig, fig_pers]
 #%%
 if __name__ == "__main__":
