@@ -20,6 +20,7 @@ requests = "^2.31.0"
 ndg-httpsclient = "^0.5.1"
 pyopenssl = "^24.1.0"
 pyasn1 = "^0.6.0"
+openpyxl = "^3.1.2"
 
 
 [build-system]
