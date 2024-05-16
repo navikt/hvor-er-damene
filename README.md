@@ -27,8 +27,11 @@ Pga at lasten trenger tilgang til teamkatalogen, kjøres den i Knada sitt miljø
 Vi har opprettet egen servicebruker i gcp `heda-access`, som har fått BigQuery Admin-rolle i Heda sitt gcp-prosjekt. Nøkkel for denne servicebrukeren ligger i Google Secret Manager.
 
 ## Quarto
-Vi har et eget [dashbord](https://data.ansatt.nav.no/story/6c66a54b-3599-4090-80a1-1a4073900929/index.html) hvor vi visualiserer ulike KPIer og datakvalitet på tabellene våre.
+Vi har et eget [dashbord](https://data.ansatt.nav.no/story/6c66a54b-3599-4090-80a1-1a4073900929/index.html) for å visualisere dataene.
 
+Kjør `quarto preview dashboard.qmd` for å se dashbordet lokalt.
+
+Kjør så `publish_story.py` for å publisere dashbordet til datamarkedsplassen.
 ## Oppsett
 
 ### Poetry

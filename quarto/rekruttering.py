@@ -9,11 +9,11 @@ colours = ['#8269A2', #Purple-400
 ]
 #%%
 def _get_stilling_data():
-    df_søkere = pd.read_excel('../data/antall søkere på utvikler-stillinger IT 2017-2024.xlsx',
+    df_søkere = pd.read_excel('data/antall søkere på utvikler-stillinger IT 2017-2024.xlsx',
                        sheet_name='Søkere på stillinger',
                        header=7)
 
-    df_ansatt = pd.read_excel('../data/antall søkere på utvikler-stillinger IT 2017-2024.xlsx',
+    df_ansatt = pd.read_excel('data/antall søkere på utvikler-stillinger IT 2017-2024.xlsx',
                        sheet_name='Ansatte på stillinger',
                        header=7)
     return df_søkere, df_ansatt
@@ -32,15 +32,21 @@ def make_stilling_plot():
     ## aggregate df_Stillinger to quarterly data for kvinne_Ansatt og totalt_ansatt and create a dataframe 
 
     df_agg = df_stillinger.groupby(pd.Grouper(key='Søknadsfrist', freq='Q')).agg({'Total_ansatt': 'sum', 'Kvinne_ansatt': 'sum', 'Total_søkere': 'sum', 'Kvinne_søkere': 'sum'}).reset_index()
-    df_agg['kvinne_andel_ansatt'] = df_agg['Kvinne_ansatt']/df_agg['Total_ansatt']*100
-    df_agg['kvinne_andel_søkere'] = df_agg['Kvinne_søkere']/df_agg['Total_søkere']*100
+    df_agg['kvinneandel_ansatt'] = df_agg['Kvinne_ansatt']/df_agg['Total_ansatt']*100
+    df_agg['kvinneandel_søkere'] = df_agg['Kvinne_søkere']/df_agg['Total_søkere']*100
     df_agg['Mann_ansatt'] = df_agg['Total_ansatt'] - df_agg['Kvinne_ansatt']
 
 
-    fig = px.bar(df_agg, x="Søknadsfrist", y=["Kvinne_ansatt", "Mann_ansatt"], color_discrete_sequence=colours, labels={"value": "Antall", "Søknadsfrist": "", "variable": ""})
-    #
+    fig = px.bar(df_agg, x="Søknadsfrist", y=["Kvinne_ansatt", "Mann_ansatt"],
+                 color_discrete_sequence=colours,
+                 title="Antall ansatte på utviklerstillinger i IT per kvartal",
+                 labels={"value": "Antall", "Søknadsfrist": "", "variable": ""})
+
     ## change this to percentages
-    fig_pers = px.bar(df_agg, x="Søknadsfrist", y=["kvinne_andel_ansatt", "kvinne_andel_søkere"], barmode='group',color_discrete_sequence=colours, labels={"value": "Kvinneandel", "Søknadsfrist": "", "Variable": ""})
+    fig_pers = px.bar(df_agg, x="Søknadsfrist", y=["kvinneandel_ansatt", "kvinneandel_søkere"],
+                      barmode='group',color_discrete_sequence=colours,
+                      title="Kvinneandel søknader og ansettelser til utviklerstillinger i IT per kvartal",
+                      labels={"value": "Kvinneandel", "Søknadsfrist": "", "Variable": ""})
     return [fig, fig_pers]
 #%%
 if __name__ == "__main__":

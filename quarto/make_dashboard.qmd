@@ -91,6 +91,7 @@ from rekruttering import make_stilling_plot
 ## Row {height=100%}
 
 ```{python}
-#| title: Kvinneandel per stilling - søkere og ansatt
-make_stilling_plot()
+[fig1, fig2] = make_stilling_plot()
+fig1.show()
+fig2.show()
 ```
