@@ -49,7 +49,7 @@ def make_roller_line_chart(bq_table = 'rolle_stats'):
     df = df.sort_values(by="dato_mnd")
     df['Kvinneandel']= round(df['antall_kvinner']/df['antall_totalt'],2)*100
 
-    interessante_roller = ["Jurist", "Designer", "Data scientist", "Data engineer", "Utvikler"]
+    interessante_roller = ["Jurist", "Designer", "Data scientist", "Data engineer", "Utvikler", "Tech lead"]
     df = df[df['Rolle'].isin(interessante_roller)]
     fig = px.line(df[df['antall_totalt'] > 9],
                    x="dato_mnd", y="Kvinneandel", color="Rolle",
