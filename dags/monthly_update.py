@@ -54,7 +54,7 @@ with DAG(
     make_quarto = quarto_operator(
         dag=dag,
         name="make_quarto",
-        allowlist=allowlist + ["storage-component.googleapis.com"],
+        allowlist=allowlist + ["storage-component.googleapis.com", "https://data.ssb.no"],
         retries=0,
         repo="navikt/hvor-er-damene",
         quarto={
