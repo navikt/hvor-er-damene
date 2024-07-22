@@ -2,7 +2,9 @@ import numpy as np
 import plotly_express as px
 
 def kakediagram(kvinne_andel, mann_andel, tittel):
-    fig = px.pie(values=[kvinne_andel, mann_andel], names=['K', 'M'], color_discrete_sequence=['#90ee90', '#add8e6'])
+    fig = px.pie(values=[kvinne_andel, mann_andel],
+                 names=['K', 'M'],
+                 color_discrete_sequence=['#6488EA', '#A2AC59'])
     fig.update_layout(
         font=dict(
             size=40,
@@ -12,6 +14,8 @@ def kakediagram(kvinne_andel, mann_andel, tittel):
         plot_bgcolor='rgba(0,0,0,0)',
         showlegend=False
     )
+    fig.update_traces(insidetextfont=dict(color='white'),
+                      outsidetextfont=dict(color='white'))
     # save as svg
     fig.write_image(f"figurer_javazone/{tittel}.svg")
 
