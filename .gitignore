@@ -9,3 +9,6 @@ __pycache__/
 
 make_dashboard_files/
 make_dashboard.html
+
+*.svg
+*.csv
