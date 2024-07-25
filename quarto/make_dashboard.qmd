@@ -23,7 +23,7 @@ dict(
 ```
 ```{python}
 #| content: valuebox
-#| title: "Programvare- og applikasjonsutviklere/analytikere 2023K4 (SSB)"
+#| title: "Programvare- og applikasjonsutviklere/analytikere 2024K1 (SSB)"
 
 dict(
   icon = "emoji-smile",
@@ -33,12 +33,12 @@ dict(
 ```
 ```{python}
 #| content: valuebox
-#| title: "Studieplass IKT-studier 2023 (Samordna opptak)"
+#| title: "Studieplass IKT-studier 2024 (Samordna opptak)"
 
 dict(
   icon = "emoji-heart-eyes",
   color = "success",
-  value = "37.1%",
+  value = "38.0%",
 )
 ```
 ## Row {height=40%}

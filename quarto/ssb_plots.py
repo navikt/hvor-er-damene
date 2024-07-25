@@ -79,7 +79,7 @@ def make_ssb_yrke_plot():
     df = _get_data_api()
     df = df.pivot(index=['kvartal', 'alder'], columns='kjønn', values='value').reset_index().fillna(0)
     df['kvinneandel'] = round(df['Kvinner'] / (df['Begge kjønn']) * 100,2)
-
+    df = df[df['kvartal'].str.endswith('K1')]
 
     fig = px.line(df, x = 'kvartal', y = 'kvinneandel', color = "alder",
                   markers = True,
@@ -90,7 +90,7 @@ def make_ssb_yrke_plot():
     return fig
 
 def make_sopptak_chart():
-    data = {'År':list(range(2005, 2024)) ,
+    data = {'År':list(range(2005, 2025)) ,
             'Kvinneandel tilbud':[17.5,
             22.5,
             21.3,
@@ -109,7 +109,8 @@ def make_sopptak_chart():
             31.3,
             32.5,
             34.1,
-            37.1]
+            37.1,
+            38.0]
             }
 
     # Create DataFrame
