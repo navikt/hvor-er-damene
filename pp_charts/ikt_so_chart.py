@@ -8,20 +8,23 @@ df = read_heda_bucket(bucket_name = 'samordna_opptak', file_name = 'samordna_opp
 
 df['Kvinneandel tilbud'] = round(df['Søkere tilbud Kvinne'] / (df['Søkere tilbud Total']) * 100,1)
 
-colours = ['#8269A2', #Purple-400
-        '#3386E0', #blue-400
-        '#005B82',#deepblue
-        '#C77300', #Orange-600
-        '#6AA399', #turkis
-]
+minty='#43B6A5'
+lys_lilla = '#DEC3FF'
+mørk_lilla='#643999'
 
 fig = px.line(df, x="År", y="Kvinneandel tilbud",
               markers=True,
-              color_discrete_sequence=colours,
-              title="Samordna opptak IKT studier: Andel kvinner blant tilbud om studieplass ",
+              color_discrete_sequence=[minty],
+              #title="Samordna opptak IKT studier: Andel kvinner blant tilbud om studieplass ",
               labels={"Kvinneandel tilbud": "", "År": "", "variable": ""},
               )
 fig.update_traces(marker={"size": 10})
 fig.update_traces(line={"width": 4})
+fig.update_layout(plot_bgcolor=mørk_lilla,
+                  paper_bgcolor='rgba(0,0,0,0)',
+                  font_size=30,
+                  font_color='white',
+                  )
 
-fig.show()
+#fig.show()
+fig.write_image(f"figurer_javazone/samordna_opptak.svg")

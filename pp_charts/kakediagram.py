@@ -1,10 +1,18 @@
 import numpy as np
 import plotly_express as px
 
+gush_grønn = '#39998A'
+gush_blå = '#999839'
+lys_lilla = '#DEC3FF'
+dus_grønn ='#6488EA'
+dus_blå = '#A2AC59'
+minty='#43B6A5'
+
+
 def kakediagram(kvinne_andel, mann_andel, tittel):
     fig = px.pie(values=[kvinne_andel, mann_andel],
                  names=['K', 'M'],
-                 color_discrete_sequence=['#6488EA', '#A2AC59'])
+                 color_discrete_sequence=[minty, lys_lilla])
     fig.update_layout(
         font=dict(
             size=40,
