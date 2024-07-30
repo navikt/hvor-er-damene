@@ -25,6 +25,7 @@ fig.update_layout(plot_bgcolor=mørk_lilla,
                   font_size=30,
                   font_color='white',
                   )
+fig.update_yaxes(rangemode="tozero")
 
 #fig.show()
 fig.write_image(f"figurer_javazone/samordna_opptak.svg")

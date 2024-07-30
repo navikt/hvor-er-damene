@@ -116,10 +116,11 @@ def make_ssb_yrke_plot():
     df = df.pivot(index=['kvartal', 'alder'], columns='kjønn', values='value').reset_index().fillna(0)
     df['kvinneandel'] = round(df['Kvinner'] / (df['Begge kjønn']) * 100,2)
     df = df[df['kvartal'].str.endswith('K1')]
+    df['år']=df['kvartal'].str.slice(0,4)
 
-    fig = px.line(df[df['alder']=="Alle aldre"], x = 'kvartal', y = 'kvinneandel', color = "alder",
+    fig = px.line(df[df['alder'].isin(["Alle aldre"])], x = 'år', y = 'kvinneandel',
                   markers = True,
-                  color_discrete_sequence = [minty],
+                  color_discrete_sequence = [  minty],
                   labels={"år": "", "alder": "", "kvinneandel": ""},)
     fig.update_traces(marker={"size": 10})
     fig.update_traces(line={"width": 4})
@@ -146,4 +147,4 @@ def make_ssb_yrke_plot_aku():
 
 if __name__ == "__main__":
     fig = make_ssb_yrke_plot()
-    fig.show()
+    fig.write_image(f"figurer_javazone/ssb_yrke.svg")
