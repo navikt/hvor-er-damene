@@ -1,11 +1,9 @@
 import numpy as np
 import plotly_express as px
 
-gush_grønn = '#39998A'
-gush_blå = '#999839'
 lys_lilla = '#DEC3FF'
-dus_grønn ='#6488EA'
-dus_blå = '#A2AC59'
+dus_blå ='#6488EA'
+gush_grønn = '#A2AC59'
 minty='#43B6A5'
 
 
