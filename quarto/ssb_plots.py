@@ -87,12 +87,7 @@ def make_ssb_yrke_plot():
                   category_orders= {"alder": ["Under 40 år", "40-54 år", "55 år eller eldre", "Alle aldre"]},
                   labels={"kvartal": "", "alder": "", "kvinneandel": ""},)
     fig['data'][3]['line']['width'] = 5
-    fig.update_traces(marker={"size": 10})
-    fig.update_traces(line={"width": 4})
-    fig.update_layout(plot_bgcolor=mørk_lilla,
-                      paper_bgcolor='rgba(0,0,0,0)',
-                      font_size=30,
-                      font_color='white',
+
 
     return fig
 
