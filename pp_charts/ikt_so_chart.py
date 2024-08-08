@@ -16,7 +16,7 @@ fig = px.line(df, x="År", y="Kvinneandel tilbud",
               markers=True,
               color_discrete_sequence=[minty],
               #title="Samordna opptak IKT studier: Andel kvinner blant tilbud om studieplass ",
-              labels={"Kvinneandel tilbud": "", "År": "", "variable": ""},
+              labels={"Kvinneandel tilbud": "%", "År": "", "variable": ""},
               )
 fig.update_traces(marker={"size": 10})
 fig.update_traces(line={"width": 4})
@@ -25,7 +25,8 @@ fig.update_layout(plot_bgcolor=mørk_lilla,
                   font_size=30,
                   font_color='white',
                   )
-fig.update_yaxes(rangemode="tozero")
+fig.update_yaxes(range=[15,40])
+#fig.update_xaxes(range=[1960,2025])
 
 #fig.show()
 fig.write_image(f"figurer_javazone/samordna_opptak.svg")

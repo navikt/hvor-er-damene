@@ -17,7 +17,7 @@ def kakediagram(df, kjonn, navn, vis_legend, yvalue, col_seq = [minty,lys_lilla]
     fig = px.pie(values=df2['Andel'],
                  names=df2['variabel'],
                  color_discrete_sequence= col_seq,
-                 title = kjonn)
+                 )
     fig.update_layout(
         font=dict(
             size=40,
@@ -27,8 +27,8 @@ def kakediagram(df, kjonn, navn, vis_legend, yvalue, col_seq = [minty,lys_lilla]
         plot_bgcolor='rgba(0,0,0,0)',
         showlegend=vis_legend
     )
-    fig.update_traces(insidetextfont=dict(color='white'),
-                      outsidetextfont=dict(color='white'))
+    fig.update_traces(showlegend=False, textinfo='none',)
+
     # save as svg
     fig.write_image(f"figurer_javazone/{navn}_{kjonn}.svg")
     #fig.show()
@@ -37,10 +37,12 @@ df = df[df["Kjønn"].isin(["Kvinne", "Mann"])]
 df = df[df["Seksjon"].isin(["utvikling"])]
 
 #rollemodeller
-#yvalue = 'Jeg savner flere  kvinnelige tekniske rollemodeller i NAV IT'
 
-#kakediagram(df1, 'Kvinne','rollemodeller_nav', vis_legend = False)
-#kakediagram(df1, 'Mann','rollemodeller_nav', vis_legend = True)
+
+kakediagram(df, 'Kvinne','rollemodeller_nav', vis_legend = False,
+            yvalue = 'Jeg savner flere  kvinnelige tekniske rollemodeller i NAV IT')
+kakediagram(df, 'Mann','rollemodeller_nav', vis_legend = False,
+            yvalue = 'Jeg savner flere  kvinnelige tekniske rollemodeller i NAV IT')
 
 #teknisk kompetanse
 kakediagram(df, 'Kvinne','teknisk_kompetanse_nav',
@@ -48,19 +50,18 @@ kakediagram(df, 'Kvinne','teknisk_kompetanse_nav',
             yvalue='Jeg har opplevd at min tekniske kompetanse blir undervurdert (av meg selv eller andre)',
             col_seq=[minty,lys_lilla, dus_blå,],)
 kakediagram(df, 'Mann','teknisk_kompetanse_nav',
-            vis_legend = True,
+            vis_legend = False,
             yvalue='Jeg har opplevd at min tekniske kompetanse blir undervurdert (av meg selv eller andre)',
             col_seq=[minty, dus_blå,lys_lilla,],
             )
 
 #normer_og_forventninger
-yvalue = 'Jeg har følt at jeg har gått i mot normer og forventninger når det gjelder mine studie- og/eller karrierevalg'
 
 kakediagram(df, 'Kvinne','normer_og_forventninger_nav', vis_legend = False,
             yvalue='Jeg har følt at jeg har gått i mot normer og forventninger når det gjelder mine studie- og/eller karrierevalg',
             col_seq=[minty, lys_lilla, dus_blå, ],
             )
-kakediagram(df, 'Mann','normer_og_forventninger_nav', vis_legend = True,
+kakediagram(df, 'Mann','normer_og_forventninger_nav', vis_legend = False,
             yvalue='Jeg har følt at jeg har gått i mot normer og forventninger når det gjelder mine studie- og/eller karrierevalg',
             col_seq=[lys_lilla, dus_blå, minty, ],
             )
