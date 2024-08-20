@@ -26,7 +26,7 @@ with DAG(
         script_path="teamkatalogen_bq/monthly_snapshot.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        #slack_channel="#heda",
+        slack_channel="#heda",
         allowlist=allowlist,
         requirements_path = "requirements.txt"
     )
@@ -36,7 +36,7 @@ with DAG(
         script_path="teamkatalogen_bq/process_snapshot.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        #slack_channel="#heda",
+        slack_channel="#heda",
         allowlist=allowlist,
         requirements_path = "requirements.txt"
     )
@@ -46,7 +46,7 @@ with DAG(
         script_path="teamkatalogen_bq/aggregate.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        #slack_channel="#heda",
+        slack_channel="#heda",
         allowlist=allowlist,
         requirements_path = "requirements.txt"
     )
@@ -56,6 +56,7 @@ with DAG(
         name="make_quarto",
         allowlist=allowlist + ["storage-component.googleapis.com", "data.ssb.no"],
         retries=0,
+        slack_channel="#heda",
         repo="navikt/hvor-er-damene",
         quarto={
             "path": "quarto/make_dashboard.qmd",
