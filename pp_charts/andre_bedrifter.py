@@ -1,12 +1,9 @@
 import pandas as pd
 import plotly.express as px
+from bucket_functions import read_heda_bucket
 
-data = { 'Bedrift':     ['Bekk','Origo', 'TET digital','Telenor', 'Indoor industrial spaces', 'Amedia', 'Aidn'],
-         'Antall_totalt':[345,  47,         33,         200,        9,                          75,        56],
-         'Antall_kvinner':[84,  11,         12,         29,         1,                          13,        10]
-}
+df = read_heda_bucket(bucket_name = 'rekruttering', file_name = 'andre_bedrifter.csv')
 
-df = pd.DataFrame(data)
 df['kvinneandel']=100*df['Antall_kvinner']/df['Antall_totalt']
 
 minty='#43B6A5'

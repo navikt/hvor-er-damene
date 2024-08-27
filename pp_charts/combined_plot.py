@@ -8,7 +8,7 @@ import requests
 
 df_ssb = _get_data_api()
 df_ssb = df_ssb.pivot(index=['kvartal', 'alder'], columns='kjønn', values='value').reset_index().fillna(0)
-df_ssb["IKT jobb"] = round(df_ssb['Kvinner'] / (df_ssb['Begge kjønn']) * 100, 2)
+df_ssb["IT ansatte"] = round(df_ssb['Kvinner'] / (df_ssb['Begge kjønn']) * 100, 2)
 df_ssb = df_ssb[df_ssb['kvartal'].str.endswith('K1')]
 df_ssb['år'] = df_ssb['kvartal'].str.slice(0, 4).astype('int64')
 df_ssb = df_ssb[df_ssb['alder'].isin(["Alle aldre"])]
@@ -22,7 +22,7 @@ minty='#43B6A5'
 lys_lilla = '#DEC3FF'
 mørk_lilla='#643999'
 
-fig = px.line(df, x="År", y=["Tilbud studieplass", "IKT jobb"],
+fig = px.line(df, x="År", y=["Tilbud studieplass", "IT ansatte"],
               markers=True,
               color_discrete_sequence=[minty, lys_lilla],
               labels={"value": "%", "År": "", "variable": ""},
