@@ -37,6 +37,10 @@ Beauty in the eye of the A.I.: How inherent racial bias has shaped A.I. and what
 
 https://fortune.com/2022/11/22/tech-forward-everyday-ai-beauty-bias/
 
+Langvarige tiltak har fått flere jenter inn på datastudier
+
+https://www.forskning.no/data-kilden-likestilling/langvarige-tiltak-har-fatt-flere-jenter-inn-pa-datastudier/1952264
+
 Girls in STEM: Is It a Female Role-Model Thing?
 
 https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2020.02204/full
@@ -73,13 +77,17 @@ https://blog.honeypot.io/what-happened-to-women-in-computer-science-infographic
  
 # Bøker: 
 
-Hvem spanderer
+Hvem spanderer? - fordommene du ikke visste du hadde
+av Marie Louise Sunde og Isabelle Ringnes
 
-Invisable woman
+Invisible women
+av Caroline Criado Perez
 
 Diagnose Kvinne
+av Liv Bjørnhaug Johansen
 
-Likestilling i akademia : fra kunnskap til endring
+Likestilling i akademia - fra kunnskap til endring
+av Øystein Gullvåg Holter og Lotta Snickare
 
 # Talks
 
