@@ -5,11 +5,15 @@ from bucket_functions import read_heda_bucket
 df = read_heda_bucket(bucket_name = 'rekruttering', file_name = 'andre_bedrifter.csv')
 
 df['kvinneandel']=100*df['Antall_kvinner']/df['Antall_totalt']
+df = df.drop(df[(df.Bedrift.isin(['BaneNOR', 'Sopra Steria']))].index)
 
 df['text_position'] = 'middle right'
-df.loc[(((df['Bedrift'] == 'BaneNOR') | (df['Bedrift'] == 'RT08') ), 'text_position')] = 'top left'
-df.loc[(((df['Bedrift'] == 'Indoor industrial spaces') | (df['Bedrift'] == 'RT08') ), 'text_position')] = 'bottom right'
-df.loc[(((df['Bedrift'] == '3LC.AI') | (df['Bedrift'] == 'RT08') ), 'text_position')] = 'top right'
+df.loc[(((df['Bedrift'] == 'BaneNOR') | (df['Bedrift'] == 'RT08') ),
+        'text_position')] = 'top left'
+df.loc[(((df['Bedrift'] == 'Indoor industrial spaces') | (df['Bedrift'] == 'Amedia') ),
+        'text_position')] = 'bottom right'
+df.loc[(((df['Bedrift'] == '3LC.AI') | (df['Bedrift'] == 'Origo') | (df['Bedrift'] == 'Lånekassen')
+         ), 'text_position')] = 'top right'
 
 
 minty='#43B6A5'
@@ -22,7 +26,7 @@ fig = px.scatter(df, x="Antall_totalt", y="kvinneandel", text="Bedrift", size_ma
               )
 fig.update_layout(plot_bgcolor=mørk_lilla,
                   paper_bgcolor='rgba(0,0,0,0)',
-                  font_size=40,
+                  font_size=45,
                   font_color='white',
                   )
 fig.update_traces(textposition=df['text_position'])
