@@ -23,7 +23,9 @@ def main():
 
         # Get data from Teamkatalogen
         df = get_teamkatalogen_data()
-
+        df = df[['Tilknyttning', 'Område', 'Klynge', 'Team', 'Ident', 'Fornavn',
+       'Etternavn', 'Type', 'Roller', 'Annet', 'Epost', 'Startdato',
+       'Sluttdato']]
         # Process data
         df['lastet_dato'] = date.today().replace(day=1)
         df.rename(columns={'Område': 'Omraade'}, inplace=True)
