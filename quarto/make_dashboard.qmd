@@ -13,12 +13,12 @@ format:
 
 ```{python}
 #| content: valuebox
-#| title: "Utvikling og data NAV IT mars 2024"
+#| title: "Utvikling og data NAV IT mars 2025"
 
 dict(
   icon = "emoji-expressionless",
   color = "primary",
-  value = "19.2%",
+  value = "20.7%",
 )
 ```
 ```{python}
