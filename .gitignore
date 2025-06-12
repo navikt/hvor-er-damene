@@ -3,6 +3,8 @@
 hist_data/
 data/
 
+.venv/
+
 .DS_Store
 __pycache__/
 
