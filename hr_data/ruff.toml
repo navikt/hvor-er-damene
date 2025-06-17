@@ -1,0 +1,62 @@
+line-length = 120
+indent-width = 4
+
+# assume Python 3.13
+target-version = "py313"
+
+[lint]
+select = [
+    "I",
+    "C",
+    "E",
+    "F",
+    "W",
+    "AIR",
+    "FIX",
+    "NPY",
+    "PD",
+    "RUF",
+    "Q",
+    "PTH",
+    "D",
+    "CPY",
+]
+ignore = [
+    "D401",
+    "RET5",
+    "D203",
+    "D212",
+    "D213",
+    "D402",
+    "D413",
+    "D415",
+    "D416",
+    "D417",
+    "D400",
+    "D1",
+    "D404",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.pydocstyle]
+convention = "numpy"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+docstring-code-format = true
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+docstring-code-line-length = "dynamic"

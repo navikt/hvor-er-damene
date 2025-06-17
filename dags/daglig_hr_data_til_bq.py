@@ -1,11 +1,11 @@
-from airflow import DAG
+"""DAG for å speile Oracle-tabeller til BigQuery"""
+
 from datetime import datetime
-from pendulum import timezone
-from dataverk_airflow import python_operator
 
-
-# DAG for å speile Oracle-tabeller til BigQuery
-
+# ignore: pakkene blir gitt av DAG-løsningen vi bruker
+from airflow import DAG  # type: ignore
+from dataverk_airflow import python_operator  # type: ignore
+from pendulum import timezone  # type: ignore
 
 with DAG(
     dag_id="daglig_hr_data_til_bq",
@@ -14,7 +14,6 @@ with DAG(
     start_date=datetime(2025, 6, 12, tzinfo=timezone("Europe/Oslo")),
     catchup=False,
 ) as dag:
-
     oracle_til_bigquery = python_operator(
         dag=dag,
         name="oracle_til_bigquery",
@@ -30,4 +29,4 @@ with DAG(
         ],
     )
 
-    oracle_til_bigquery
+    oracle_til_bigquery  # type: ignore blir brukt av DAG

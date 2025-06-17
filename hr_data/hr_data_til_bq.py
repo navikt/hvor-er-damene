@@ -1,12 +1,17 @@
-# laster data fra Oracle onprem til BQ
-import os
+"""
+daglig DAG for speiling av hr-tabell fra oracle til bigquery
+
+laster data fra Oracle onprem til BQ
+"""
+
 import json
 import logging
+import os
+
 import oracledb
 import pandas as pd
 from google.cloud import secretmanager
 from google.cloud.bigquery import Client, LoadJobConfig
-
 
 logging.basicConfig(level=logging.INFO)
 
