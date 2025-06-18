@@ -29,4 +29,4 @@ with DAG(
         ],
     )
 
-    oracle_til_bigquery  # type: ignore blir brukt av DAG
+    oracle_til_bigquery  # type: ignore # blir brukt av DAG
