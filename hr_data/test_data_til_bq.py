@@ -22,22 +22,8 @@ TEST_TABLE_NAME = "test_ansatte_direktoratet"
 
 bq_client = create_client(PROJECT_ID, SA_KEY_NAME)
 
-cols_test_mangfold_data = [
-    "fake_id",
-    "fodselsdato",
-    "alder",
-    "ansatt_i_år",
-    "stillingsnavn",
-    "organisasjon_avdeling",
-    "organisasjon_seksjon",
-    "antall_ansatte_under",
-    "lederniva",
-    "kjonn",
-]
-
-df_test_mangfold_data = pd.read_csv(
-    "test_data_mock.csv", header=None, names=cols_test_mangfold_data, index_col=False, sep=";"
-)
+df_test_mangfold_data = pd.read_csv("test_data_mock.csv", header=0, index_col=False, sep=";", parse_dates=[1])
+cols_test_mangfold_data = [col.strip() for col in df_test_mangfold_data.columns]
 
 logging.info(f"Generert test dataframe: \n{df_test_mangfold_data.head(10)}")
 
