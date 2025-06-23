@@ -23,6 +23,8 @@ def main(dry_run=False):
     if dry_run:
         logging.getLogger().setLevel(logging.INFO)
 
+    TEST_DATA_SOURCE = "test_data_hr.csv"
+
     PROJECT_ID = "heda-prod-2664"
     SA_KEY_NAME = "heda-access-key"
     DATASET = "hr_data"
@@ -34,7 +36,7 @@ def main(dry_run=False):
         bq_client = create_client(PROJECT_ID, SA_KEY_NAME)
 
     df_test_mangfold_data = pd.read_csv(
-        "test_data_mock.csv",
+        TEST_DATA_SOURCE,
         header=0,
         index_col=False,
         sep=";",
