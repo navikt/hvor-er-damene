@@ -42,7 +42,6 @@ def main(dry_run=False):
         sep=";",
         parse_dates=[1],
         skipinitialspace=True,
-        engine="python",
         quoting=csv.QUOTE_MINIMAL,
     )
     cols_test_mangfold_data = [col.strip() for col in df_test_mangfold_data.columns]
@@ -66,5 +65,5 @@ def main(dry_run=False):
 
 
 if __name__ == "__main__":
-    dry_run = False
+    dry_run = True
     main(dry_run=dry_run)

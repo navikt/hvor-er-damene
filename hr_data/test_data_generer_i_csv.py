@@ -75,11 +75,13 @@ def generate_test_data(num_rows):
             to_datetime_wrapper("1900-01-01"),
             to_datetime_wrapper("today"),
             n=num_rows,
-        ).normalize(),  # randomisering setter ikke til midnatt selv om prosessering av kildedata ville gjøre det,
+        ).normalize(),  # randomisering setter ikke til midnatt selv om kildedata har det,
         # så sett normalize() manuelt
-        # TODO: alder svarer ikke til fødsel
-        "alder": rng.integers(20, 71, size=num_rows),
-        "ansatt_i_år": rng.integers(0, 51, size=num_rows),
+        "ansatt_fra": n_random_datetimes(
+            to_datetime_wrapper("1960-01-01"),
+            to_datetime_wrapper("today"),
+            n=num_rows,
+        ).normalize(),
         "stillingsnavn": rng.choice(
             list(test_stillingstitler.keys()),
             size=num_rows,
@@ -95,11 +97,23 @@ def generate_test_data(num_rows):
             size=num_rows,
             p=list(test_org_seksjoner.values()),
         ),
-        "antall_ansatte_under": rng.integers(0, 10, size=num_rows),
-        "lederniva": rng.choice(["1", "2", "3", "4", "5"], size=num_rows),
+        "lederniva": rng.choice(["1", "2", "3", "4", "5", "6"], size=num_rows, p=[0.0, 0.002, 0.018, 0.03, 0.15, 0.8]),
         "kjonn": rng.choice(["Mann", "Kvinne"], size=num_rows),
     }
-    return pd.DataFrame(data)
+
+    today_date = to_datetime_wrapper("today")
+    # ansatt i tilfeldig periode mellom 1 dag opp til 50 år (365 dager hver), for alle rader
+    data["ansatt_til"] = (data["ansatt_fra"] + pd.to_timedelta(rng.integers(1, 365 * 50, num_rows), unit="days")).tz_localize(
+        "UTC"
+    )
+
+    data_df = pd.DataFrame(data)
+
+    data_df["ansatt_til"] = data_df["ansatt_til"].mask(
+        data_df["ansatt_til"].gt(today_date), pd.to_datetime("2099-12-31", utc=True)
+    )
+
+    return data_df
 
 
 def main():
