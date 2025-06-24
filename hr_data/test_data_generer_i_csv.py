@@ -21,7 +21,7 @@ def n_random_datetimes(start, end, n=10):
     start_u = start.value // divide_by
     end_u = end.value // divide_by
 
-    return pd.to_datetime(rng.integers(start_u, end_u, n), unit=unit)
+    return pd.to_datetime(rng.integers(start_u, end_u, n), unit=unit, utc=True).normalize()
 
 
 def to_datetime_wrapper(date_str):
@@ -75,13 +75,12 @@ def generate_test_data(num_rows):
             to_datetime_wrapper("1900-01-01"),
             to_datetime_wrapper("today"),
             n=num_rows,
-        ).normalize(),  # randomisering setter ikke til midnatt selv om kildedata har det,
-        # så sett normalize() manuelt
+        ),
         "ansatt_fra": n_random_datetimes(
             to_datetime_wrapper("1960-01-01"),
             to_datetime_wrapper("today"),
             n=num_rows,
-        ).normalize(),
+        ),
         "stillingsnavn": rng.choice(
             list(test_stillingstitler.keys()),
             size=num_rows,
@@ -103,9 +102,7 @@ def generate_test_data(num_rows):
 
     today_date = to_datetime_wrapper("today")
     # ansatt i tilfeldig periode mellom 1 dag opp til 50 år (365 dager hver), for alle rader
-    data["ansatt_til"] = (data["ansatt_fra"] + pd.to_timedelta(rng.integers(1, 365 * 50, num_rows), unit="days")).tz_localize(
-        "UTC"
-    )
+    data["ansatt_til"] = data["ansatt_fra"] + pd.to_timedelta(rng.integers(1, 365 * 50, num_rows), unit="days")
 
     data_df = pd.DataFrame(data)
 
