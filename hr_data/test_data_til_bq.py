@@ -1,17 +1,20 @@
 """
-lager test-data med forventet struktur for å kunne teste frontend
+Leser inn test-data (csv) med forventet struktur for å kunne teste frontend
 
-lager test-data direkte i pandas og laster opp til BigQuery test-tabell
+henter data som er laget direkte i pandas og laster opp til BigQuery test-tabell
 (prod vs dev environment?)
 """
 
 import csv
 import logging
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from google.cloud.bigquery import LoadJobConfig
+
+from df_funksjoner import read_test_data_csv
 
 sys.path.append("..")
 from teamkatalogen_bq.funksjoner import create_client
@@ -23,7 +26,7 @@ def main(dry_run=False):
     if dry_run:
         logging.getLogger().setLevel(logging.INFO)
 
-    TEST_DATA_SOURCE = "test_data_hr.csv"
+    TEST_DATA_SOURCE = Path("test_data_hr_prossesert.csv")
 
     PROJECT_ID = "heda-prod-2664"
     SA_KEY_NAME = "heda-access-key"
@@ -35,19 +38,12 @@ def main(dry_run=False):
     if not dry_run:
         bq_client = create_client(PROJECT_ID, SA_KEY_NAME)
 
-    df_test_mangfold_data = pd.read_csv(
-        TEST_DATA_SOURCE,
-        header=0,
-        index_col=False,
-        sep=";",
-        parse_dates=[1],
-        skipinitialspace=True,
-        quoting=csv.QUOTE_MINIMAL,
-    )
-    cols_test_mangfold_data = [col.strip() for col in df_test_mangfold_data.columns]
+    df_test_mangfold_data = read_test_data_csv(TEST_DATA_SOURCE, date_column_indexes=[])
+    cols_test_mangfold_data = df_test_mangfold_data.columns
 
     logging.info(f"Kolonner i dataframe som blir brukt: \n{cols_test_mangfold_data}")
     logging.info(f"Generert test dataframe: \n{df_test_mangfold_data.head(10)}")
+    logging.info(f"{df_test_mangfold_data.info()}")
 
     if not dry_run and bq_client:
         # laste data til BQ

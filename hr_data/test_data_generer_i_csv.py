@@ -1,7 +1,11 @@
 """Lager test data i csv-format med tilfeldige verdier som kan brukes videre i utvikling"""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+
+from df_funksjoner import to_datetime_wrapper, write_test_data_csv
 
 
 def n_random_datetimes(start, end, n=10):
@@ -22,17 +26,6 @@ def n_random_datetimes(start, end, n=10):
     end_u = end.value // divide_by
 
     return pd.to_datetime(rng.integers(start_u, end_u, n), unit=unit, utc=True).normalize()
-
-
-def to_datetime_wrapper(date_str):
-    """Wrapper function to avoid repeating the same transformations everywhere (and shorten code somewhat)
-
-    NOTE: Instead of localizing properly, we drop times and just use the date - nothing we do is precise enough for this to matter,
-    so we set the attached time to midnight (00:00:00) in UTC. The data is all from Norway,
-    but some of it is already normalized to 00:00:00 which we don't want to localize to european timezone,
-    as this would change the date. So we just "reduce" it to midnight UTC.
-    """
-    return pd.to_datetime(date_str, utc=True).normalize()
 
 
 def generate_test_data(num_rows):
@@ -69,7 +62,7 @@ def generate_test_data(num_rows):
 
     rng = np.random.default_rng()
     data = {
-        "fake_id": [f"{i:04d}" for i in range(1, num_rows + 1)],
+        "nav_id": [f"{rng.choice(['A', 'B', 'C', 'D'])}{i:04d}" for i in range(1, num_rows + 1)],
         # today som str input til pandas virker som datetime.today()
         "fodselsdato": n_random_datetimes(
             to_datetime_wrapper("1900-01-01"),
@@ -117,7 +110,7 @@ def main():
     df_test_hr_data = generate_test_data(100)
     print(df_test_hr_data.head(10))
 
-    df_test_hr_data.to_csv("test_data_hr.csv", index=False, sep=";", quoting=1, header=True)
+    write_test_data_csv(df_test_hr_data, Path("test_data_hr.csv"))
 
 
 if __name__ == "__main__":
