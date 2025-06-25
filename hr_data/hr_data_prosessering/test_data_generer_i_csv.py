@@ -1,14 +1,16 @@
 """Lager test data i csv-format med tilfeldige verdier som kan brukes videre i utvikling"""
 
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from df_funksjoner import to_datetime_wrapper, write_test_data_csv
+sys.path.append("../..")
+from hr_data.hr_data_prosessering.df_funksjoner import to_datetime_wrapper, write_test_data_csv
 
 
-def n_random_datetimes(start, end, n=10):
+def n_random_datetimes(start: pd.Timestamp, end: pd.Timestamp, n: int = 10) -> pd.DatetimeIndex:
     r"""Function from: https://stackoverflow.com/a/50559321
 
     unix timestamp is in ns by default.
@@ -28,7 +30,7 @@ def n_random_datetimes(start, end, n=10):
     return pd.to_datetime(rng.integers(start_u, end_u, n), unit=unit, utc=True).normalize()
 
 
-def generate_test_data(num_rows):
+def generate_test_data(num_rows: int) -> pd.DataFrame:
     """Genererer testdata med tilfeldige verdier"""
     # vektet med relativt antall av hvor mange som skal dukke opp i test-data
     test_stillingstitler = {
@@ -74,7 +76,7 @@ def generate_test_data(num_rows):
             to_datetime_wrapper("today"),
             n=num_rows,
         ),
-        "stillingsnavn": rng.choice(
+        "rolle": rng.choice(
             list(test_stillingstitler.keys()),
             size=num_rows,
             p=list(test_stillingstitler.values()),
@@ -106,12 +108,13 @@ def generate_test_data(num_rows):
     return data_df
 
 
-def main():
+def main(test_data_filename: Path) -> None:
     df_test_hr_data = generate_test_data(100)
     print(df_test_hr_data.head(10))
 
-    write_test_data_csv(df_test_hr_data, Path("test_data_hr.csv"))
+    write_test_data_csv(df_test_hr_data, test_data_filename)
 
 
 if __name__ == "__main__":
-    main()
+    test_data_filename = Path("test_data_hr.csv")
+    main(test_data_filename)

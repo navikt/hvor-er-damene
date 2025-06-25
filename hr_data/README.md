@@ -8,7 +8,7 @@ Underprosjekt av [#heda](../README.md)
 Data hentes fra HR-data i Oracle database. Se Python-skriptene [daglig_hr_data_til_bq.py](../dags/daglig_hr_data_til_bq.py) og [hr_data_til_bq.py](hr_data_til_bq.py).
 
 ### Tabeller
-Tabellene som blir laget ligger i BigQuery i Heda sitt prod gcp-prosjekt. 
+Tabellene som blir laget ligger i BigQuery i Heda sitt prod gcp-prosjekt. Test data er i dev prosjekt.
 
 ### Skedulering
 Datalasten kjøres daglig om morgenen (Oslo) via Heda sin [airflow](https://heda.airflow.knada.io/).
