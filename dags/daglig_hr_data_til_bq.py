@@ -11,7 +11,7 @@ allowlist = [
     "secretmanager.googleapis.com",
     "bigquery.googleapis.com",
     "dmv09-scan.adeo.no:1521",  # DVH Prod
-    # "teamkatalog-api.intern.nav.no",
+    "teamkatalog-api.intern.nav.no",
 ]
 
 with DAG(

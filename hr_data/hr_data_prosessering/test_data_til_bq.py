@@ -12,13 +12,11 @@ from pathlib import Path
 import pandas as pd
 from google.cloud.bigquery import Client, LoadJobConfig
 
-sys.path.append("../..")
+sys.path.append("../..")  # importere fra teamkatalogen_bq
 from teamkatalogen_bq.funksjoner import create_client
 
 import hr_data.main_prosessering as settings
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv
-
-logging.basicConfig()
 
 
 def bigquery_upload_hr_df(
@@ -28,7 +26,6 @@ def bigquery_upload_hr_df(
     DATASET=None,
     TABLE_NAME=None,
 ):
-    SA_KEY_NAME = "heda-access-key"
     bq_client: Client = create_client(PROJECT_ID, SA_KEY_NAME)
 
     # laste data til BQ
@@ -47,20 +44,19 @@ def bigquery_upload_hr_df(
 
 def main(data_source: Path, dry_run: bool = True) -> None:
     if dry_run:
-        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     df_test_mangfold_data = read_test_data_csv(data_source, date_column_indexes=[])
     cols_test_mangfold_data = df_test_mangfold_data.columns
 
     logging.info(f"Kolonner i dataframe som blir brukt: \n{cols_test_mangfold_data}")
     logging.info(f"Generert test dataframe: \n{df_test_mangfold_data.head(10)}")
-    logging.info(f"{df_test_mangfold_data.info()}")
+    # logging.info(f"{df_test_mangfold_data.info()}")
 
     if not dry_run:
         bigquery_upload_hr_df(
             hr_df=df_test_mangfold_data,
-            # PROJECT_ID=settings.DEV_PROJECT_ID,
-            PROJECT_ID=settings.PROD_PROJECT_ID,
+            PROJECT_ID=settings.PROD_PROJECT_ID,  # PROJECT_ID=settings.DEV_PROJECT_ID,
             SA_KEY_NAME=settings.SA_KEY_NAME,
             DATASET=settings.DATASET,
             TABLE_NAME=settings.TEST_TABLE_NAME,
@@ -70,6 +66,7 @@ def main(data_source: Path, dry_run: bool = True) -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
     dry_run = False
 
     data_source_path = Path(settings.TEST_DATA_PROCESSED_FILENAME).resolve()

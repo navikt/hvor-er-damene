@@ -14,6 +14,20 @@ sys.path.append("../..")
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, to_datetime_wrapper, write_test_data_csv
 
 
+def get_hr_df_relevant_columns(input_df: pd.DataFrame):
+    output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "stillingsnavn", "lederniva", "kjonn"]].copy()
+    input_df = pd.DataFrame()  # blank out original
+
+    return output_df
+
+
+def get_tk_df_relevant_columns(input_df: pd.DataFrame):
+    output_df = input_df[["nav_id", "organisasjon_avdeling", "organisasjon_seksjon"]].copy()
+    input_df = pd.DataFrame()  # blank out original
+
+    return output_df
+
+
 def df_aggregate_age(input_df: pd.DataFrame) -> pd.DataFrame:
     today_date = to_datetime_wrapper("today")
 
@@ -35,7 +49,7 @@ def df_aggregate_age(input_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def df_change_id_column(input_df: pd.DataFrame) -> pd.DataFrame:
-    input_df = input_df.sample(frac=1).reset_index(drop=True)
+    input_df = input_df.sample(frac=1).reset_index(drop=True)  # shuffler
     input_df["nav_id"] = input_df.index.astype(str).str.zfill(4)  # gjør til id på form 0001 etc.
     input_df = input_df.rename(columns={"nav_id": "rad_id"})
 
@@ -68,33 +82,47 @@ def df_aggregate_worked_years(input_df: pd.DataFrame) -> pd.DataFrame:
     return input_df
 
 
-def df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
+def df_hr_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     """Kjører prosessering på df i riktig rekkefølge"""
-    output_df = input_df.copy()
-    output_df = df_change_id_column(output_df)
+    output_df = get_hr_df_relevant_columns(input_df)  # kjører copy inne
     output_df = df_aggregate_age(output_df)
     output_df = df_aggregate_worked_years(output_df)
 
     return output_df
 
 
-def main(SOURCE_DATA: dict, target_data_filename: Path) -> None:
-    if SOURCE_DATA["csv"] is not None:
-        df_test_mangfold_data = read_test_data_csv(SOURCE_DATA["csv"], date_column_indexes=[1, 2, 8])
-    else:
-        raise NotImplementedError
+def df_tk_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
+    raise NotImplementedError
 
-    df_test_mangfold_data = df_process_pipeline(df_test_mangfold_data)
+
+def df_mangfold_join_pipeline(input_hr_df: pd.DataFrame, input_tk_df: pd.DataFrame) -> pd.DataFrame:
+    output_mangfold_df = input_hr_df.join(input_tk_df.set_index("nav_id"), on="nav_id", how="outer")
+
+    # fjern id-kolonnen når den er brukt, inkluderer omsortering
+    output_mangfold_df = df_change_id_column(output_mangfold_df)
+
+    return output_mangfold_df
+
+
+def main(source_hr_data_filename: Path, target_hr_data_filename: Path, source_tk_data_filename: Path) -> None:
+    df_test_hr_data = read_test_data_csv(source_hr_data_filename, date_column_indexes=["fodselsdato", "ansatt_fra", "ansatt_til"])
+    df_test_tk_data = read_test_data_csv(source_tk_data_filename, date_column_indexes=[])
+
+    df_test_hr_data = df_hr_process_pipeline(df_test_hr_data)
+
+    df_test_mangfold_data = df_mangfold_join_pipeline(df_test_hr_data, df_test_tk_data)
 
     print(df_test_mangfold_data.head(10))
     print(df_test_mangfold_data.info())
 
-    write_test_data_csv(df_test_mangfold_data, target_data_filename)
+    write_test_data_csv(df_test_mangfold_data, target_hr_data_filename)
 
     return None
 
 
 if __name__ == "__main__":
-    SOURCE_DATA = {"csv": Path("test_data_hr.csv")}
-    TARGET_DATA_FILENAME = Path("test_data_hr_prossesert.csv")
-    main(SOURCE_DATA, TARGET_DATA_FILENAME)
+    source_hr_data_filename = Path("test_data_hr.csv")
+    target_hr_data_filename = Path("test_data_hr_prossesert.csv")
+
+    source_tk_data_filename = Path("test_data_tk.csv")
+    main(source_hr_data_filename, target_hr_data_filename, source_tk_data_filename)
