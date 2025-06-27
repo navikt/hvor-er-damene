@@ -14,10 +14,14 @@ allowlist = [
     "teamkatalog-api.intern.nav.no",
 ]
 
+default_args = {
+    "owner": "heda",
+}
+
 with DAG(
     dag_id="daglig_hr_data_til_bq",
     description="DAG for å speile Oracle-tabeller til BigQuery",
-    owner="heda",
+    default_args=default_args,
     schedule_interval="0 6 * * *",  # Kjør hver dag kl. 06:00
     start_date=datetime(2025, 6, 12, tzinfo=timezone("Europe/Oslo")),
     catchup=False,
