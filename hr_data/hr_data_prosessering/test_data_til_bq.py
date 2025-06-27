@@ -15,31 +15,9 @@ from google.cloud.bigquery import Client, LoadJobConfig
 sys.path.append("../..")  # importere fra teamkatalogen_bq
 from teamkatalogen_bq.funksjoner import create_client
 
+import hr_data.bigquery_funksjoner as bq_funksjoner
 import hr_data.main_prosessering as settings
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv
-
-
-def bigquery_upload_hr_df(
-    hr_df: pd.DataFrame | None = None,
-    PROJECT_ID=None,
-    SA_KEY_NAME=None,
-    DATASET=None,
-    TABLE_NAME=None,
-):
-    bq_client: Client = create_client(PROJECT_ID, SA_KEY_NAME)
-
-    # laste data til BQ
-    job_config = LoadJobConfig(
-        write_disposition="WRITE_TRUNCATE",  # NOTE: skriver over tabeller hver gang
-        create_disposition="CREATE_IF_NEEDED",
-    )
-    bq_dataset = f"{PROJECT_ID}.{DATASET}"
-    bq_table = f"{bq_dataset}.{TABLE_NAME}"
-
-    run_job = bq_client.load_table_from_dataframe(hr_df, bq_table, job_config=job_config)
-    run_job.result()
-
-    return None
 
 
 def main(data_source: Path, dry_run: bool = True) -> None:
@@ -54,7 +32,7 @@ def main(data_source: Path, dry_run: bool = True) -> None:
     # logging.info(f"{df_test_mangfold_data.info()}")
 
     if not dry_run:
-        bigquery_upload_hr_df(
+        bq_funksjoner.bigquery_upload_hr_df(
             hr_df=df_test_mangfold_data,
             PROJECT_ID=settings.PROD_PROJECT_ID,  # PROJECT_ID=settings.DEV_PROJECT_ID,
             SA_KEY_NAME=settings.SA_KEY_NAME,

@@ -16,6 +16,8 @@ from pathlib import Path
 sys.path.append("..")  # importere fra teamkatalogen_bq
 from teamkatalogen_bq.funksjoner import get_teamkatalogen_data
 
+import hr_data.bigquery_funksjoner as bq_funksjoner
+
 # sirkulær import betyr vi trenger denne typen import og ikke funksjonen direkte
 import hr_data.hr_data_prosessering.test_data_til_bq as test_data_til_bq
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, write_test_data_csv
@@ -92,7 +94,7 @@ def main(upload_to_bq: bool = False) -> int:
             df_test_mangfold_data_processed = read_test_data_csv(TEST_DATA_PROCESSED_FILEPATH, date_column_indexes=[])
 
         if upload_to_bq:
-            test_data_til_bq.bigquery_upload_hr_df(
+            bq_funksjoner.bigquery_upload_hr_df(
                 hr_df=df_test_mangfold_data_processed,
                 PROJECT_ID=PROD_PROJECT_ID,
                 SA_KEY_NAME=SA_KEY_NAME,
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(prog="Prosjekt_mangfold_main")
-    parser.add_argument("-dry", "--dry-run", action="store_false")
+    parser.add_argument("-dry", "--dry-run", action="store_true", help="Kjør prosessering uten å laste opp data til BigQuery")
     args = vars(parser.parse_args())
 
     # if dry run is NOT enabled and NOT forced on, upload to BigQuery
