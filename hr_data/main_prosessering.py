@@ -16,10 +16,11 @@ from pathlib import Path
 sys.path.append("..")  # importere fra teamkatalogen_bq
 from teamkatalogen_bq.funksjoner import get_teamkatalogen_data
 
+# sirkulær import betyr vi trenger denne typen import og ikke funksjonen direkte
+import hr_data.hr_data_prosessering.test_data_til_bq as test_data_til_bq
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, write_test_data_csv
 from hr_data.hr_data_prosessering.hr_data_prosessering import df_hr_process_pipeline, df_mangfold_join_pipeline
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
-from hr_data.hr_data_prosessering.test_data_til_bq import bigquery_upload_hr_df
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -91,7 +92,7 @@ def main(upload_to_bq: bool = False) -> int:
             df_test_mangfold_data_processed = read_test_data_csv(TEST_DATA_PROCESSED_FILEPATH, date_column_indexes=[])
 
         if upload_to_bq:
-            bigquery_upload_hr_df(
+            test_data_til_bq.bigquery_upload_hr_df(
                 hr_df=df_test_mangfold_data_processed,
                 PROJECT_ID=PROD_PROJECT_ID,
                 SA_KEY_NAME=SA_KEY_NAME,
@@ -110,7 +111,8 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
 
     # if dry run is NOT enabled and NOT forced on, upload to BigQuery
-    upload_to_bq = not (args["dry-run"] or DRY_RUN_OVERRIDE)
+    upload_to_bq = not (args["dry_run"] or DRY_RUN_OVERRIDE)
+    logging.info(f"Laste opp til BigQuery: {upload_to_bq}")
 
     retcode = main(upload_to_bq=upload_to_bq)
 
