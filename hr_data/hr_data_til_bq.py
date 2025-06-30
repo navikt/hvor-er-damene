@@ -53,7 +53,8 @@ def hent_oracle_data_til_df(sql_query: str | None = None):
         columns = [col[0].lower() for col in cursor.description]
         data = cursor.fetchall()
     df_ansatte = pd.DataFrame(data, columns=columns)
-    logging.info(f"Hentet {len(df_ansatte)} rader")
+    logging.info(f"Hentet {len(df_ansatte)} rader fra Oracle")
+    logging.debug(f"Brukte SQL-spørring: `{sql_query}`")
     connection.close()
 
     return df_ansatte
@@ -73,16 +74,44 @@ def main(project: str | None = None):
 
     for oracle_source_table, bq_target_table in oracle_source_to_target_bigquery_mapping_dict.items():
         sql: str = f"select * from {oracle_source_table}"
+        # flagg for om oracle-spørringen feilet: oracle_data_error: bool
+
         # henter fra Oracle
-        df_ansatte = hent_oracle_data_til_df(sql_query=sql)
+        try:
+            df_ansatte = hent_oracle_data_til_df(sql_query=sql)
+            oracle_data_error: bool = False  # flagg for om oracle-spørringen feilet
+        except oracledb.DatabaseError as e:
+            logging.error(
+                f"Databasefeil ved henting av data fra Oracle (sannsynligvis feil eller ikke-eksisterende tabell-navn): \n{e}"
+            )
+            logging.error(f"Tabellnavn: `{oracle_source_table}`")
+            logging.error(f"SQL-spørring som feilet: `{sql}`")
+            oracle_data_error: bool = True
+
+            continue
+        except Exception as e:
+            logging.error(f"Feil ved henting av data fra Oracle: \n{e}")
+            oracle_data_error: bool = True
+            continue
+
         # sender data til BigQuery
-        bigquery_upload_hr_df(
-            hr_df=df_ansatte,
-            PROJECT_ID=project,
-            SA_KEY_NAME=sa_key_name,
-            DATASET=bq_dataset,
-            TABLE_NAME=bq_target_table,
-        )
+        if oracle_data_error is False:
+            bigquery_upload_hr_df(
+                hr_df=df_ansatte,
+                PROJECT_ID=project,
+                SA_KEY_NAME=sa_key_name,
+                DATASET=bq_dataset,
+                TABLE_NAME=bq_target_table,
+            )
+            logging.info(f"Lastet opp {len(df_ansatte)} rader til BigQuery-tabellen `{bq_target_table}`")
+        elif oracle_data_error is True:
+            logging.error(
+                f"Hoppet over lasting av data til BigQuery-tabellen `{bq_target_table}`,\
+                      siden Oracle-spørring feilet og ingen data ble hentet"
+            )
+            continue
+        else:  # else skal aldri kunne skje
+            raise ValueError("Status på Oracle data er udefinert, kan ikke fortsette")
 
     return None
 
