@@ -2,7 +2,7 @@
 Entry point - kjører alt av prosessering for å håndtere hr_data i BigQuery.
 
 Skiller mellom dev og prod environments, med prod env variabel = true kjøres ekte data som ligger på prod-gcp-prosjekt,
-ellers (ingen variabel) kjøres dev ved å først generere falsk data som så lastes opp til tabell - foreløpig også i prod-gcp
+ellers (ingen variabel) kjøres dev ved å først generere falsk data som så lastes opp til tabell i dev-gcp-prosjekt
 
 skriptet `hr_data_til_bq.py` er ikke relatert
 """
@@ -14,12 +14,8 @@ import sys
 from pathlib import Path
 
 sys.path.append("..")  # importere fra teamkatalogen_bq
-from teamkatalogen_bq.funksjoner import get_teamkatalogen_data
-
-import hr_data.bigquery_funksjoner as bq_funksjoner
-
-# sirkulær import betyr vi trenger denne typen import og ikke funksjonen direkte
-import hr_data.hr_data_prosessering.test_data_til_bq as test_data_til_bq
+# from teamkatalogen_bq.funksjoner import get_teamkatalogen_data
+import hr_data.bigquery_funksjoner as bq_funksjoner  # sirkulær import betyr vi trenger denne typen import og ikke funksjon direkte
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, write_test_data_csv
 from hr_data.hr_data_prosessering.hr_data_prosessering import df_hr_process_pipeline, df_mangfold_join_pipeline
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
@@ -43,9 +39,9 @@ TEST_DATA_PROCESSED_FILEPATH: Path = Path("hr_data_prosessering", TEST_DATA_PROC
 SA_KEY_NAME = "heda-access-key"
 DATASET = "hr_data"
 PROD_PROJECT_ID = "heda-prod-2664"
-# service account ikke i dev, kan ikke kjøre direkte i dev?
 DEV_PROJECT_ID = "heda-dev-9df1"
 
+# endre her for tabellnavn som brukes i backend
 TEST_TABLE_NAME = "test_ansatte_direktoratet"
 
 
@@ -58,12 +54,13 @@ def main(upload_to_bq: bool = False) -> int:
     if PROD_ENV:
         logging.info("Kjører i prod environment")
         raise NotImplementedError
+    # not prod => dev environment
     else:
         if not DAG_NODE:
             logging.getLogger().setLevel(logging.DEBUG)
         logging.info("Kjører i dev environment")
 
-        tk_df = get_teamkatalogen_data()
+        # tk_df = get_teamkatalogen_data()
         # print(tk_df.columns)
 
         ids_array = generate_row_ids(N_ROWS_TEST_DATA)
@@ -96,7 +93,7 @@ def main(upload_to_bq: bool = False) -> int:
         if upload_to_bq:
             bq_funksjoner.bigquery_upload_hr_df(
                 hr_df=df_test_mangfold_data_processed,
-                PROJECT_ID=PROD_PROJECT_ID,
+                PROJECT_ID=DEV_PROJECT_ID,
                 SA_KEY_NAME=SA_KEY_NAME,
                 DATASET=DATASET,
                 TABLE_NAME=TEST_TABLE_NAME,

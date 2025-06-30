@@ -9,12 +9,7 @@ import logging
 import sys
 from pathlib import Path
 
-import pandas as pd
-from google.cloud.bigquery import Client, LoadJobConfig
-
 sys.path.append("../..")  # importere fra teamkatalogen_bq
-from teamkatalogen_bq.funksjoner import create_client
-
 import hr_data.bigquery_funksjoner as bq_funksjoner
 import hr_data.main_prosessering as settings
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv
@@ -34,7 +29,7 @@ def main(data_source: Path, dry_run: bool = True) -> None:
     if not dry_run:
         bq_funksjoner.bigquery_upload_hr_df(
             hr_df=df_test_mangfold_data,
-            PROJECT_ID=settings.PROD_PROJECT_ID,  # PROJECT_ID=settings.DEV_PROJECT_ID,
+            PROJECT_ID=settings.DEV_PROJECT_ID,
             SA_KEY_NAME=settings.SA_KEY_NAME,
             DATASET=settings.DATASET,
             TABLE_NAME=settings.TEST_TABLE_NAME,

@@ -77,6 +77,7 @@ def main(project: str | None = None):
         # flagg for om oracle-spørringen feilet: oracle_data_error: bool
 
         # henter fra Oracle
+        logging.info(f"Henter data fra Oracle-tabellen `{oracle_source_table}`")
         try:
             df_ansatte = hent_oracle_data_til_df(sql_query=sql)
             oracle_data_error: bool = False  # flagg for om oracle-spørringen feilet

@@ -15,7 +15,7 @@ from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, to_da
 
 
 def get_hr_df_relevant_columns(input_df: pd.DataFrame):
-    output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "stillingsnavn", "lederniva", "kjonn"]].copy()
+    output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "rolle", "lederniva", "kjonn"]].copy()
     input_df = pd.DataFrame()  # blank out original
 
     return output_df
@@ -84,6 +84,8 @@ def df_aggregate_worked_years(input_df: pd.DataFrame) -> pd.DataFrame:
 
 def df_hr_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     """Kjører prosessering på df i riktig rekkefølge"""
+    input_df = input_df.rename(columns={"stillingsnavn": "rolle"})  # TODO: prosseser rolle via stillingskatalog
+    # (ikke så relevant lenger?)
     output_df = get_hr_df_relevant_columns(input_df)  # kjører copy inne
     output_df = df_aggregate_age(output_df)
     output_df = df_aggregate_worked_years(output_df)
