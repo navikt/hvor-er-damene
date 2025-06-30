@@ -65,7 +65,7 @@ def main(project: str | None = None):
     oracle_source_to_target_bigquery_mapping_dict = {
         "dt_hr.hrres_ressurs_sommer": "ansatte_direktoratet_raw",
         "dt_hr.hrres_ressurs_sommer_tk": "ansatte_plus_teamkatalog_raw",
-        "dt_hr.hrres_ressurs_sommer_tk_rolle": "ansatte_plus_teamkatalog_rolle_raw",
+        "dt_hr.hrres_ressurs_sommer_tk_roller": "ansatte_plus_teamkatalog_roller_raw",
         "dt_hr.hrres_ressurs_sommer_tk_grupper": "ansatte_teamkatalog_grupper_raw",
     }
 
