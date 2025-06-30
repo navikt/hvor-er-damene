@@ -1,9 +1,8 @@
 from datetime import datetime
+
 from airflow import DAG
-
-from dataverk_airflow import python_operator, quarto_operator
 from airflow.models import Variable
-
+from dataverk_airflow import python_operator, quarto_operator
 
 dag_name = "monthly_update"
 default_args = {
@@ -19,16 +18,15 @@ with DAG(
     default_args=default_args,
     schedule_interval="0 0 1 * *",
 ) as dag:
-
     insert_monthly_snapshot_raw = python_operator(
         dag=dag,
         name="insert_monthly_snapshot_raw",
         script_path="teamkatalogen_bq/monthly_snapshot.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        slack_channel="#heda",
+        slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path = "requirements.txt"
+        requirements_path="requirements.txt",
     )
     process_snapshot = python_operator(
         dag=dag,
@@ -36,9 +34,9 @@ with DAG(
         script_path="teamkatalogen_bq/process_snapshot.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        slack_channel="#heda",
+        slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path = "requirements.txt"
+        requirements_path="requirements.txt",
     )
     aggregate = python_operator(
         dag=dag,
@@ -46,9 +44,9 @@ with DAG(
         script_path="teamkatalogen_bq/aggregate.py",
         repo="navikt/hvor-er-damene",
         branch="main",
-        slack_channel="#heda",
+        slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path = "requirements.txt"
+        requirements_path="requirements.txt",
     )
 
     make_quarto = quarto_operator(
@@ -56,7 +54,7 @@ with DAG(
         name="make_quarto",
         allowlist=allowlist + ["storage-component.googleapis.com", "data.ssb.no"],
         retries=0,
-        slack_channel="#heda",
+        slack_channel="#team-heda",
         repo="navikt/hvor-er-damene",
         quarto={
             "path": "quarto/make_dashboard.qmd",

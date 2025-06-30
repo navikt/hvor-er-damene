@@ -33,7 +33,7 @@ with DAG(
         script_path="hr_data/hr_data_til_bq.py",
         requirements_path="requirements_bq.txt",
         use_uv_pip_install=True,
-        slack_channel="#heda",
+        slack_channel="#team-heda",
         allowlist=allowlist,
     )
 
