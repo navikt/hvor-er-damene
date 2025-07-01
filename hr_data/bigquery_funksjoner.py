@@ -15,8 +15,13 @@ def bigquery_upload_hr_df(
     SA_KEY_NAME=None,
     DATASET=None,
     TABLE_NAME=None,
+    bq_client_premade: Client | None = None,
 ):
-    bq_client: Client = tk_funksjoner.create_client(PROJECT_ID, SA_KEY_NAME)
+    # optionally possible to supply a pre-made client - we use this when fetching data from BQ first and uploading later
+    if not bq_client_premade:
+        bq_client: Client = tk_funksjoner.create_client(PROJECT_ID, SA_KEY_NAME)
+    else:
+        bq_client: Client = bq_client_premade
 
     # laste data til BQ
     job_config = LoadJobConfig(

@@ -31,16 +31,26 @@ def main(data_source: Path, dry_run: bool = True) -> None:
             hr_df=df_test_mangfold_data,
             PROJECT_ID=settings.DEV_PROJECT_ID,
             SA_KEY_NAME=settings.SA_KEY_NAME,
-            DATASET=settings.DATASET,
+            DATASET=settings.PROCESSED_DATASET,
             TABLE_NAME=settings.TEST_TABLE_NAME,
         )
+    else:
+        logging.info(f"""\nWould upload:
+        bq_funksjoner.bigquery_upload_hr_df(
+            hr_df=df_test,
+            PROJECT_ID={settings.DEV_PROJECT_ID},
+            SA_KEY_NAME={settings.SA_KEY_NAME},
+            DATASET={settings.PROCESSED_DATASET},
+            TABLE_NAME={settings.TEST_TABLE_NAME},
+        )
+        """)
 
     return None
 
 
 if __name__ == "__main__":
     logging.basicConfig()
-    dry_run = False
+    dry_run = True
 
     data_source_path = Path(settings.TEST_DATA_PROCESSED_FILENAME).resolve()
     main(data_source_path, dry_run=dry_run)
