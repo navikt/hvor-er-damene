@@ -14,6 +14,51 @@ sys.path.append("../..")
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, to_datetime_wrapper, write_test_data_csv
 
 
+def hr_data_map_roles_to_tk_names(input_df: pd.DataFrame, role_column: str = "rolle") -> pd.DataFrame:
+    # laget manuelt fra å stirre på teamkatalogen
+    roller_mapping = {
+        "DEVELOPER": "Utvikler",
+        "DOMAIN_RESOURCE": "Fagressurs",
+        "TECHNICAL_ADVISER": "Teknisk rådgiver",
+        "OTHER": "Annet",
+        "SECURITY_CHAMPION": "Security champion",
+        "LEGAL_ADVISER": "Jurist",
+        "DESIGNER": "Designer",
+        "LEAD": "Teamleder",
+        "PRODUCT_LEAD": "Produktleder",
+        "TECH_LEAD": "Tech lead",
+        "SUBJECT_MATTER_EXPERT": "Fagekspert",
+        "OPERATIONS": "Drift",
+        "DOMAIN_RESPONSIBLE": "Fagansvarlig",
+        "FUNCTIONAL_ADVISER": "Funksjonell rådgiver",
+        "DOMAIN_EXPERT": "Domeneekspert",
+        "ARCHITECT": "Arkitekt",
+        "DATA_SCIENTIST": "Data scientist",
+        "TECH_DOMAIN_SPECIALIST": "Teknisk domenespesialist",
+        "SOLUTION_ARCHITECT": "Løsningsarkitekt",
+        "DATA_ENGINEER": "Data engineer",
+        "BUSINESS_ANALYST": "Andre roller",
+        "TESTER": "Andre roller",
+        "AREA_LEAD": "Andre roller",
+        "COMMUNICATION_ADVISER": "Andre roller",
+        "SECURITY_ARCHITECT": "Andre roller",
+        "STAFFING_MANAGER": "Andre roller",
+        "CONTROLLER": "Andre roller",
+        "PLATFORM_SYSTEM_TECHNICIAN": "Andre roller",
+        "DATA_MANAGER": "Andre roller",
+        "DESIGN_RESEARCHER": "Andre roller",
+        "VISUAL_ANALYTICS_ENGINEER": "Andre roller",
+        "HEAD_OF_LEGAL": "Andre roller",
+        "MAINTENANCE_MANAGER": "Andre roller",
+        "TECHNICAL_TESTER": "Andre roller",
+        "DESIGN_LEAD": "Andre roller",
+    }
+
+    input_df[role_column] = input_df[role_column].map(roller_mapping)
+
+    return input_df
+
+
 def get_hr_df_relevant_columns(input_df: pd.DataFrame):
     output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "rolle", "lederniva", "kjonn"]].copy()
     input_df = pd.DataFrame()  # blank out original
@@ -54,6 +99,9 @@ def df_aggregate_age_group(input_df: pd.DataFrame, age_column="aldersgruppe") ->
         bins=[-1, 30, 50, 1000],
         labels=["<30", "30-50", "50+"],
     )
+
+    # patch: for å håndtere NaN senere, legg til en kategori for å fange opp ukjent
+    input_df[age_column] = input_df[age_column].cat.add_categories("Ukjent")
 
     return input_df
 
@@ -101,6 +149,9 @@ def df_aggregate_worked_year_groups(input_df: pd.DataFrame, worked_years_column=
         bins=[-1, 2, 4, 6, 8, 10, 16, 1000],
         labels=["0-2", "2-4", "4-6", "6-8", "8-10", "10-16", "16+"],
     )
+
+    # patch: for å håndtere NaN senere, legg til en kategori for å fange opp ukjent
+    input_df[worked_years_column] = input_df[worked_years_column].cat.add_categories("Ukjent")
 
     return input_df
 
