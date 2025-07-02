@@ -20,7 +20,7 @@ sys.path.append("..")  # importere fra teamkatalogen_bq
 # from teamkatalogen_bq.funksjoner import get_teamkatalogen_data
 import teamkatalogen_bq.funksjoner as tk_funksjoner
 
-import hr_data.bigquery_funksjoner as bq_funksjoner  # sirkulær import betyr vi trenger denne typen import og ikke funksjon direkte
+import hr_data.bigquery_funksjoner as bq_funksjoner  # sirkulær import betyr vi trenger denne typen import, ikke direkte funksjon
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, write_test_data_csv
 from hr_data.hr_data_prosessering.hr_data_prosessering import df_hr_process_pipeline, df_mangfold_join_pipeline
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
@@ -122,6 +122,93 @@ SOURCE_TABLES_SQL_QUERY[table] = f"""
     """
 
 
+def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
+    if not DAG_NODE:  # kjører lokal debug
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    logging.info("Kjører i prod environment")
+
+    bq_client: Client = tk_funksjoner.create_client(PROD_PROJECT_ID, SA_KEY_NAME)
+
+    # hent data fra BigQuery
+    for source_table, fetch_query in SOURCE_TABLES_SQL_QUERY.items():
+        if fetch_query:
+            logging.info(f"Henter data fra BigQuery-tabellen `{source_table}`")
+            logging.info(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
+            big_query_result_df = bq_client.query(fetch_query).to_dataframe()
+
+            BQ_TABLE_DF_CONTAINER[source_table] = big_query_result_df
+
+        else:
+            logging.info(f"Skipping `{source_table}` as no columns were specified")
+
+    for table_name, bq_df in BQ_TABLE_DF_CONTAINER.items():
+        logging.info(f"Dataframe for `{table_name}` har {bq_df.shape[0]} rader og {bq_df.shape[1]} kolonner")
+        logging.debug(f"Kolonner: {bq_df.columns.tolist()}")
+
+        logging.debug(f"{bq_df.head(10)}")
+
+    if upload_to_bq:
+        bq_funksjoner.bigquery_upload_hr_df(
+            hr_df=None,
+            PROJECT_ID=PROD_PROJECT_ID,
+            SA_KEY_NAME=SA_KEY_NAME,
+            DATASET=PROCESSED_DATASET,
+            TABLE_NAME=...,
+            bq_client_premade=bq_client,
+        )
+
+    return 0
+
+
+def dev_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
+    if not DAG_NODE:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    logging.info("Kjører i dev environment")
+
+    # tk_df = get_teamkatalogen_data()
+    # print(tk_df.columns)
+
+    ids_array = generate_row_ids(N_ROWS_TEST_DATA)
+    df_test_hr_data = generate_hr_test_data(N_ROWS_TEST_DATA, ids_array)
+    logging.info(f"Generert {df_test_hr_data.shape[0]} rader test-data form HR")
+
+    df_test_tk_data = generate_tk_test_data(N_ROWS_TEST_DATA, ids_array)
+    logging.info(f"Generert {df_test_tk_data.shape[0]} rader test-data form teamkatalogen")
+
+    if not DAG_NODE:
+        write_test_data_csv(df_test_hr_data, TEST_HR_DATA_FILEPATH)
+        write_test_data_csv(df_test_tk_data, TEST_TK_DATA_FILEPATH)
+        logging.debug(f"Skrev generert data til `{TEST_HR_DATA_FILEPATH}` og `{TEST_TK_DATA_FILEPATH}`")
+
+        df_test_hr_data = read_test_data_csv(
+            TEST_HR_DATA_FILEPATH, date_column_indexes=["fodselsdato", "ansatt_fra", "ansatt_til"]
+        )
+        df_test_tk_data = read_test_data_csv(TEST_TK_DATA_FILEPATH, date_column_indexes=[])
+
+    df_test_hr_data = df_hr_process_pipeline(df_test_hr_data)
+    df_test_mangfold_data_processed = df_mangfold_join_pipeline(df_test_hr_data, df_test_tk_data)
+    logging.debug("Test-data ferdig prossesert")
+
+    if not DAG_NODE:
+        write_test_data_csv(df_test_mangfold_data_processed, TEST_DATA_PROCESSED_FILEPATH)
+        logging.debug(f"Skrev prosessert test-data til `{TEST_DATA_PROCESSED_FILEPATH}`")
+
+        df_test_mangfold_data_processed = read_test_data_csv(TEST_DATA_PROCESSED_FILEPATH, date_column_indexes=[])
+
+    if upload_to_bq:
+        bq_funksjoner.bigquery_upload_hr_df(
+            hr_df=df_test_mangfold_data_processed,
+            PROJECT_ID=DEV_PROJECT_ID,
+            SA_KEY_NAME=SA_KEY_NAME,
+            DATASET=PROCESSED_DATASET,
+            TABLE_NAME=TEST_TABLE_NAME,
+        )
+
+    return 0
+
+
 def main(upload_to_bq: bool = False) -> int:
     """Main funksjon som knytter sammen metoder i andre filer"""
     # sjekk environment
@@ -129,87 +216,13 @@ def main(upload_to_bq: bool = False) -> int:
     DAG_NODE = os.getenv("DAG_NODE", None)  # set on node running airflow to avoid file writes
 
     if PROD_ENV:
-        if not DAG_NODE:  # kjører lokal debug
-            logging.getLogger().setLevel(logging.DEBUG)
-
-        logging.info("Kjører i prod environment")
-
-        bq_client: Client = tk_funksjoner.create_client(PROD_PROJECT_ID, SA_KEY_NAME)
-
-        # hent data fra BigQuery
-        for source_table, fetch_query in SOURCE_TABLES_SQL_QUERY.items():
-            if fetch_query:
-                logging.info(f"Henter data fra BigQuery-tabellen `{source_table}`")
-                logging.info(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
-                big_query_result_df = bq_client.query(fetch_query).to_dataframe()
-
-                BQ_TABLE_DF_CONTAINER[source_table] = big_query_result_df
-
-            else:
-                logging.info(f"Skipping `{source_table}` as no columns were specified")
-
-        for table_name, bq_df in BQ_TABLE_DF_CONTAINER.items():
-            logging.info(f"Dataframe for `{table_name}` har {bq_df.shape[0]} rader og {bq_df.shape[1]} kolonner")
-            logging.debug(f"Kolonner: {bq_df.columns.tolist()}")
-
-            logging.debug(f"{bq_df.head(10)}")
-
-        if upload_to_bq:
-            bq_funksjoner.bigquery_upload_hr_df(
-                hr_df=None,
-                PROJECT_ID=PROD_PROJECT_ID,
-                SA_KEY_NAME=SA_KEY_NAME,
-                DATASET=PROCESSED_DATASET,
-                TABLE_NAME=...,
-                bq_client_premade=bq_client,
-            )
+        retcode = prod_main(PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
     # not prod => dev environment
     else:
-        if not DAG_NODE:
-            logging.getLogger().setLevel(logging.DEBUG)
-        logging.info("Kjører i dev environment")
+        retcode = dev_main(PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
-        # tk_df = get_teamkatalogen_data()
-        # print(tk_df.columns)
-
-        ids_array = generate_row_ids(N_ROWS_TEST_DATA)
-        df_test_hr_data = generate_hr_test_data(N_ROWS_TEST_DATA, ids_array)
-        logging.info(f"Generert {df_test_hr_data.shape[0]} rader test-data form HR")
-
-        df_test_tk_data = generate_tk_test_data(N_ROWS_TEST_DATA, ids_array)
-        logging.info(f"Generert {df_test_tk_data.shape[0]} rader test-data form teamkatalogen")
-
-        if not DAG_NODE:
-            write_test_data_csv(df_test_hr_data, TEST_HR_DATA_FILEPATH)
-            write_test_data_csv(df_test_tk_data, TEST_TK_DATA_FILEPATH)
-            logging.debug(f"Skrev generert data til `{TEST_HR_DATA_FILEPATH}` og `{TEST_TK_DATA_FILEPATH}`")
-
-            df_test_hr_data = read_test_data_csv(
-                TEST_HR_DATA_FILEPATH, date_column_indexes=["fodselsdato", "ansatt_fra", "ansatt_til"]
-            )
-            df_test_tk_data = read_test_data_csv(TEST_TK_DATA_FILEPATH, date_column_indexes=[])
-
-        df_test_hr_data = df_hr_process_pipeline(df_test_hr_data)
-        df_test_mangfold_data_processed = df_mangfold_join_pipeline(df_test_hr_data, df_test_tk_data)
-        logging.debug("Test-data ferdig prossesert")
-
-        if not DAG_NODE:
-            write_test_data_csv(df_test_mangfold_data_processed, TEST_DATA_PROCESSED_FILEPATH)
-            logging.debug(f"Skrev prosessert test-data til `{TEST_DATA_PROCESSED_FILEPATH}`")
-
-            df_test_mangfold_data_processed = read_test_data_csv(TEST_DATA_PROCESSED_FILEPATH, date_column_indexes=[])
-
-        if upload_to_bq:
-            bq_funksjoner.bigquery_upload_hr_df(
-                hr_df=df_test_mangfold_data_processed,
-                PROJECT_ID=DEV_PROJECT_ID,
-                SA_KEY_NAME=SA_KEY_NAME,
-                DATASET=PROCESSED_DATASET,
-                TABLE_NAME=TEST_TABLE_NAME,
-            )
-
-    return 0
+    return retcode
 
 
 if __name__ == "__main__":
