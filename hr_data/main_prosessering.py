@@ -22,7 +22,13 @@ import teamkatalogen_bq.funksjoner as tk_funksjoner
 
 import hr_data.bigquery_funksjoner as bq_funksjoner  # sirkulær import betyr vi trenger denne typen import, ikke direkte funksjon
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, write_test_data_csv
-from hr_data.hr_data_prosessering.hr_data_prosessering import df_hr_process_pipeline, df_mangfold_join_pipeline
+from hr_data.hr_data_prosessering.hr_data_prosessering import (
+    df_aggregate_age_group,
+    df_aggregate_worked_year_groups,
+    df_hr_process_pipeline,
+    df_mangfold_join_pipeline,
+    hr_data_map_roles_to_tk_names,
+)
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
 
 logging.basicConfig(level=logging.WARNING)
@@ -51,6 +57,7 @@ DEV_PROJECT_ID = "heda-dev-9df1"
 TEST_TABLE_NAME = "test_ansatte_direktoratet"
 
 # tabeller på big query, trenger ikke alle kolonner lokalt så spør bare om X kolonner
+# tabeller med tomme kolonner hoppes over
 SOURCE_TABLES_AND_COLUMNS = {
     "ansatte_direktoratet_raw": [],
     "ansatte_plus_teamkatalog_raw": [
@@ -87,10 +94,55 @@ SOURCE_TABLES_AND_COLUMNS = {
     ],
     "ansatte_teamkatalog_grupper_raw": [],
 }
+# vi vil ha output tabeller som er gruppert basert på disse kolonnene,
+# med ulike opphavs-tabeller som grupperes for å gi resultatene
+TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
+    "ansatt_gruppert_hr_avdeling_antall": [
+        "kjonn",
+        "aldersgruppe",
+        "ansiennitetsgruppe",
+        "orgniv1_navn",
+        "orgniv2_navn",
+        "orgniv25_navn",
+        "orgniv3_navn",
+        "omrade",
+    ],
+    "ansatt_gruppert_tk_medlemskap_antall": [
+        "kjonn",
+        "aldersgruppe",
+        "ansiennitetsgruppe",
+        "orgniv1_navn",
+        "omrade",
+    ],
+    "ansatt_gruppert_hr_stilling_antall": [
+        "kjonn",
+        "aldersgruppe",
+        "ansiennitetsgruppe",
+        "stillingsnavn",
+    ],
+    "ansatt_gruppert_tk_roller_antall": [
+        "kjonn",
+        "aldersgruppe",
+        "ansiennitetsgruppe",
+        "rolle",
+    ],
+}
+# hvilken ny tabell skal lages basert på hvilken kildetabell
+TARGET_TABLE_TO_SOURCE_TABLE_MAPPING = {
+    "ansatt_gruppert_hr_avdeling_antall": "ansatte_plus_teamkatalog_raw",
+    "ansatt_gruppert_tk_medlemskap_antall": "ansatte_plus_teamkatalog_raw",
+    "ansatt_gruppert_hr_stilling_antall": "ansatte_plus_teamkatalog_roller_raw",
+    "ansatt_gruppert_tk_roller_antall": "ansatte_plus_teamkatalog_roller_raw",
+}
+# slipp å definere target tabeller to ganger, hent fra dict over
+TARGET_TABLES_LIST = list(TARGET_TABLE_TO_SOURCE_TABLE_MAPPING.keys())
+
 # funksjonalitet for å definere sql-spørringen som skal kjøres på hver tabell
 SOURCE_TABLES_SQL_QUERY = {}
 # hver kildetabell blir lastet inn som ett dataframe
 BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
+# vi lager nye dataframes som skal ende opp som nye bigquery tabeller
+TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
 
 # definer SQL spørringer
 # velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, eller som har noe data i henhold til teamkatalogen
@@ -122,6 +174,25 @@ SOURCE_TABLES_SQL_QUERY[table] = f"""
     """
 
 
+def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
+    output_df = input_df.copy()
+
+    # grupper på alder
+    output_df = output_df.rename(columns={"alder": "aldersgruppe"})
+    output_df = df_aggregate_age_group(output_df, age_column="aldersgruppe")
+
+    # grupper på ansiennitet
+    output_df = output_df.rename(columns={"ansatt_fra_aar": "ansiennitetsgruppe"})
+    # regn ut hvor mange år siden de ble ansatt
+    current_year = pd.Timestamp.now().year
+    output_df["ansiennitetsgruppe"] = current_year - output_df["ansiennitetsgruppe"].astype(int)
+    output_df = df_aggregate_worked_year_groups(output_df, worked_years_column="ansiennitetsgruppe")
+
+    output_df = output_df.fillna("Ukjent")
+
+    return output_df
+
+
 def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
     if not DAG_NODE:  # kjører lokal debug
         logging.getLogger().setLevel(logging.DEBUG)
@@ -134,29 +205,56 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
     for source_table, fetch_query in SOURCE_TABLES_SQL_QUERY.items():
         if fetch_query:
             logging.info(f"Henter data fra BigQuery-tabellen `{source_table}`")
-            logging.info(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
+            logging.debug(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
             big_query_result_df = bq_client.query(fetch_query).to_dataframe()
 
             BQ_TABLE_DF_CONTAINER[source_table] = big_query_result_df
+            logging.info(f"Hentet {big_query_result_df.shape[0]} rader og {big_query_result_df.shape[1]} kolonner")
 
         else:
             logging.info(f"Skipping `{source_table}` as no columns were specified")
 
-    for table_name, bq_df in BQ_TABLE_DF_CONTAINER.items():
-        logging.info(f"Dataframe for `{table_name}` har {bq_df.shape[0]} rader og {bq_df.shape[1]} kolonner")
-        logging.debug(f"Kolonner: {bq_df.columns.tolist()}")
+    # kjør første pass med aggregering, fjerner detaljert informasjon om alder og ansettelsesår
+    for target_table_name, source_table_name in TARGET_TABLE_TO_SOURCE_TABLE_MAPPING.items():
+        # pipeline har en inkludert copy-operasjon
+        # så vi forbereder ett nytt dataframe for hver target som en kopi av kilde-tabellene
+        # (som kan bruke samme kilde flere ganger)
+        TARGET_TABLE_DF_CONTAINER[target_table_name] = bigquery_df_process_pipeline(BQ_TABLE_DF_CONTAINER[source_table_name])
 
-        logging.debug(f"{bq_df.head(10)}")
-
-    if upload_to_bq:
-        bq_funksjoner.bigquery_upload_hr_df(
-            hr_df=None,
-            PROJECT_ID=PROD_PROJECT_ID,
-            SA_KEY_NAME=SA_KEY_NAME,
-            DATASET=PROCESSED_DATASET,
-            TABLE_NAME=...,
-            bq_client_premade=bq_client,
+    # lag target tabeller som skal lastes opp i BigQuery som resultat til bruk av backend/frontend
+    for target_table in TARGET_TABLES_LIST:
+        # grupperer på gitte kolonner og teller opp
+        # vi ønsker en rad per mulige kombinasjoner av kjønn, aldersgruppe, ansiennitetsgruppe, avdeling, etc.
+        # med antall hvor mange som passer i disse kombinasjonene
+        grouped_df = (
+            TARGET_TABLE_DF_CONTAINER[target_table]
+            .groupby(TARGET_TABLE_COLUMNS_TO_GROUP_BY[target_table], dropna=False, as_index=False, observed=True)
+            .size()
         )
+
+        grouped_df = grouped_df.rename(columns={"size": "antall"})  # type: ignore ,wrong inference from .size()
+        # sorter sånn at største gruppe kommer først NOTE: kan hende vi fjerner
+        grouped_df = grouped_df.sort_values(by=["antall"], ascending=False)
+
+        # håndtering av kolonner som bare er i noen av settene
+        if "rolle" in grouped_df.columns:
+            grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
+
+        logging.debug(grouped_df.info())
+        logging.debug(grouped_df.describe())
+        if not DAG_NODE:
+            grouped_df.to_csv(f"test_grouped_df_{target_table}.csv", index=True, index_label="index")
+            logging.debug(f"Skrev prosessert data til `test_grouped_df_{target_table}.csv` for inspeksjon")
+
+        if upload_to_bq:
+            bq_funksjoner.bigquery_upload_hr_df(
+                hr_df=grouped_df,  # type: ignore ,wrong inference from .size()
+                PROJECT_ID=PROD_PROJECT_ID,
+                SA_KEY_NAME=SA_KEY_NAME,
+                DATASET=PROCESSED_DATASET,
+                TABLE_NAME=target_table,
+                bq_client_premade=bq_client,
+            )
 
     return 0
 
