@@ -28,23 +28,33 @@ def get_tk_df_relevant_columns(input_df: pd.DataFrame):
     return output_df
 
 
-def df_aggregate_age(input_df: pd.DataFrame) -> pd.DataFrame:
+def df_aggregate_age_from_dateofbirth(input_df: pd.DataFrame) -> pd.DataFrame:
     today_date = to_datetime_wrapper("today")
 
     for i in input_df.index:
         input_df.loc[i, "aldersgruppe"] = relativedelta.relativedelta(today_date, input_df.loc[i, "fodselsdato"]).years  # type: ignore
         # type inference er ikke riktig på df.loc
 
-    # aldersgrupper er 0-30, 30-50, 50-1000 (ikke at noen er 1000 år gamle)
-    # NOTE: hvis noen er over 1000 år gamle skal de bli stående som NAN i endelig data, obs på dette
-    # det betyr kildedata har feil fødselsdato
-    input_df["aldersgruppe"] = pd.cut(
-        input_df["aldersgruppe"],
+    input_df = df_aggregate_age_group(input_df, age_column="aldersgruppe")
+
+    input_df = input_df.drop(columns=["fodselsdato"])
+    return input_df
+
+
+def df_aggregate_age_group(input_df: pd.DataFrame, age_column="aldersgruppe") -> pd.DataFrame:
+    """
+    Grupperer alder i år fra input_df
+
+    aldersgrupper er 0-30, 30-50, 50-1000 (ikke at noen er 1000 år gamle)
+    NOTE: hvis noen er over 1000 år gamle skal de bli stående som NAN i endelig data, obs på dette
+    det betyr kildedata har feil fødselsdato
+    """
+    input_df[age_column] = pd.cut(
+        input_df[age_column],
         bins=[-1, 30, 50, 1000],
         labels=["<30", "30-50", "50+"],
     )
 
-    input_df = input_df.drop(columns=["fodselsdato"])
     return input_df
 
 
@@ -56,7 +66,7 @@ def df_change_id_column(input_df: pd.DataFrame) -> pd.DataFrame:
     return input_df
 
 
-def df_aggregate_worked_years(input_df: pd.DataFrame) -> pd.DataFrame:
+def df_aggregate_worked_years_from_timestamps(input_df: pd.DataFrame) -> pd.DataFrame:
     today_date = to_datetime_wrapper("today")
 
     # for test data er dette bare revers av noe som allerede er kjørt, men det er nødvendig på reell data
@@ -70,15 +80,28 @@ def df_aggregate_worked_years(input_df: pd.DataFrame) -> pd.DataFrame:
         ).years
         # feil type inference på df.loc (er to datetimes med utc timezone)
 
-    # ansiennitetsgrupper er 0-2, 2-4, 4-6, 6-8, 8-10, 10-16, 16+
-    input_df["ansiennitetsgruppe"] = pd.cut(
-        input_df["ansiennitetsgruppe"],
+    input_df = df_aggregate_worked_year_groups(input_df, worked_years_column="ansiennitetsgruppe")
+
+    input_df = input_df.drop(columns=["ansatt_til"])
+    input_df = input_df.drop(columns=["ansatt_fra"])
+    return input_df
+
+
+def df_aggregate_worked_year_groups(input_df: pd.DataFrame, worked_years_column="ansiennitetsgruppe") -> pd.DataFrame:
+    """
+    Grupperer ansiennitet i år fra input_df
+
+    ansiennitetsgrupper er 0-2, 2-4, 4-6, 6-8, 8-10, 10-16, 16+
+
+    NOTE: hvis noen har mer enn 1000 års ansiennitet blir de stående som ansiennetet=NAN, obs på dette
+    det betyr kildedata har feil ansatt_fra dato
+    """
+    input_df[worked_years_column] = pd.cut(
+        input_df[worked_years_column],
         bins=[-1, 2, 4, 6, 8, 10, 16, 1000],
         labels=["0-2", "2-4", "4-6", "6-8", "8-10", "10-16", "16+"],
     )
 
-    input_df = input_df.drop(columns=["ansatt_til"])
-    input_df = input_df.drop(columns=["ansatt_fra"])
     return input_df
 
 
@@ -87,8 +110,8 @@ def df_hr_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     input_df = input_df.rename(columns={"stillingsnavn": "rolle"})  # TODO: prosseser rolle via stillingskatalog
     # (ikke så relevant lenger?)
     output_df = get_hr_df_relevant_columns(input_df)  # kjører copy inne
-    output_df = df_aggregate_age(output_df)
-    output_df = df_aggregate_worked_years(output_df)
+    output_df = df_aggregate_age_from_dateofbirth(output_df)
+    output_df = df_aggregate_worked_years_from_timestamps(output_df)
 
     return output_df
 
