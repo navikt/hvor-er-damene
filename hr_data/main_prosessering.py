@@ -7,6 +7,7 @@ ellers (ingen variabel) kjøres dev ved å først generere falsk data som så la
 skriptet `hr_data_til_bq.py` er ikke relatert
 """
 
+## imports
 import argparse
 import logging
 import os
@@ -31,6 +32,7 @@ from hr_data.hr_data_prosessering.hr_data_prosessering import (
 )
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
 
+## program
 logging.basicConfig(level=logging.WARNING)
 
 # variabler kan bli hentet av andre filer uten å kjøre main
@@ -248,13 +250,25 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
 
         if upload_to_bq:
             bq_funksjoner.bigquery_upload_hr_df(
-                hr_df=grouped_df,  # type: ignore ,wrong inference from .size()
+                hr_df=grouped_df,
                 PROJECT_ID=PROD_PROJECT_ID,
                 SA_KEY_NAME=SA_KEY_NAME,
                 DATASET=PROCESSED_DATASET,
                 TABLE_NAME=target_table,
                 bq_client_premade=bq_client,
             )
+            logging.info(f"Lastet opp {grouped_df.shape[0]} rader til BigQuery-tabellen `{target_table}`")
+        else:
+            logging.info(f"""\nWould upload:
+            bq_funksjoner.bigquery_upload_hr_df(
+                hr_df=grouped_df,
+                PROJECT_ID={PROD_PROJECT_ID},
+                SA_KEY_NAME={SA_KEY_NAME},
+                DATASET={PROCESSED_DATASET},
+                TABLE_NAME={target_table},
+                bq_client_premade=bq_client,
+            )
+            """)
 
     return 0
 
@@ -262,6 +276,12 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
 def dev_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
     if not DAG_NODE:
         logging.getLogger().setLevel(logging.DEBUG)
+
+    if PROD_ENV:
+        raise ValueError(
+            f"Du har satt PROD_ENV variabelen til å indikere prod-environment etter å ha startet programmet. Ikke gjør det. \
+            \nPROD_ENV={PROD_ENV}"
+        )
 
     logging.info("Kjører i dev environment")
 
@@ -303,6 +323,17 @@ def dev_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = Fa
             DATASET=PROCESSED_DATASET,
             TABLE_NAME=TEST_TABLE_NAME,
         )
+        logging.info(f"Lastet opp {df_test_mangfold_data_processed.shape[0]} rader til BigQuery-tabellen `{TEST_TABLE_NAME}`")
+    else:
+        logging.info(f"""\nWould upload:
+        bq_funksjoner.bigquery_upload_hr_df(
+            hr_df=df_test_mangfold_data_processed,
+            PROJECT_ID={DEV_PROJECT_ID},
+            SA_KEY_NAME={SA_KEY_NAME},
+            DATASET={PROCESSED_DATASET},
+            TABLE_NAME={TEST_TABLE_NAME},
+        )
+        """)
 
     return 0
 
