@@ -23,12 +23,12 @@ def main():
 
         # Get data from Teamkatalogen
         df = get_teamkatalogen_data()
-        df = df[['Tilknyttning', 'Område', 'Klynge', 'Team', 'Ident', 'Fornavn',
+        df = df[['Tilknyttning', 'Seksjon', 'Klynge', 'Team', 'Ident', 'Fornavn',
        'Etternavn', 'Type', 'Roller', 'Annet', 'Epost', 'Startdato',
        'Sluttdato']]
         # Process data
         df['lastet_dato'] = date.today().replace(day=1)
-        df.rename(columns={'Område': 'Omraade'}, inplace=True)
+        df.rename(columns={'Seksjon': 'Omraade'}, inplace=True)
 
         # Write data to BigQuery
         write_to_BQ(client=bq_client, table_name="monthly_snapshot_raw", dframe=df, dataset=DATASET)

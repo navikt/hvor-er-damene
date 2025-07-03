@@ -7,7 +7,7 @@ data/
 
 .DS_Store
 __pycache__/
-
+.python-version
 
 make_dashboard_files/
 make_dashboard.html

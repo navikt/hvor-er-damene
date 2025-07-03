@@ -32,12 +32,3 @@ Vi har et eget [dashbord](https://data.ansatt.nav.no/story/7ea943c9-ae07-4d75-9b
 Kjør `quarto preview dashboard.qmd` for å se dashbordet lokalt.
 
 Kjør så `publish_story.py` for å publisere dashbordet til datamarkedsplassen.
-## Oppsett
-
-### Poetry
-Vi har brukt [poetry](https://python-poetry.org/) for å håndtere avhengigheter og miljø. 
-Man må da installere poetry for å lage et miljø, men vi har også lagt til en `requirements.txt`-fil for de som ikke ønsker å bruke poetry, via denne komandoen:
-
-``poetry export --without-hashes --format=requirements.txt > requirements.txt``
-
-Vi trenger også en requirement.txt-fil for å kjøre dags-ene våre.
