@@ -66,33 +66,32 @@ SOURCE_TABLES_AND_COLUMNS = {
         "kjonn",
         "alder",
         "ansatt_fra_aar",
-        "stillingsnavn",
+        "ledernivå",
         "orgniv1_navn",
         "orgniv2_navn",
         "orgniv25_navn",
         "orgniv3_navn",
-        "orgenhet_navn",
         "team",
-        "klynge",
         "omrade",
         "roles",
         "roller",
+        "sektor",
     ],
     "ansatte_plus_teamkatalog_roller_raw": [
         "kjonn",
         "alder",
         "ansatt_fra_aar",
-        "stillingsnavn",
+        "ledernivå",
         "orgniv1_navn",
         "orgniv2_navn",
         "orgniv25_navn",
         "orgniv3_navn",
-        "orgenhet_navn",
+        "stillingsnavn",
         "team",
-        "klynge",
         "omrade",
         "role",
         "rolle",
+        "sektor",
     ],
     "ansatte_teamkatalog_grupper_raw": [],
 }
@@ -105,9 +104,7 @@ TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
         "ansiennitetsgruppe",
         "orgniv1_navn",
         "orgniv2_navn",
-        "orgniv25_navn",
-        "orgniv3_navn",
-        "omrade",
+        "org_seksjon",  # seksjon er en ny kolonne som er laget av coalesce orgniv25 + orgniv3
     ],
     "ansatt_gruppert_tk_medlemskap_antall": [
         "kjonn",
@@ -130,6 +127,7 @@ TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
     ],
 }
 # hvilken ny tabell skal lages basert på hvilken kildetabell
+# en kildetabell kan gi flere output-tabeller
 TARGET_TABLE_TO_SOURCE_TABLE_MAPPING = {
     "ansatt_gruppert_hr_avdeling_antall": "ansatte_plus_teamkatalog_raw",
     "ansatt_gruppert_tk_medlemskap_antall": "ansatte_plus_teamkatalog_raw",
@@ -147,19 +145,15 @@ BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
 TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
 
 # definer SQL spørringer
-# velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, eller som har noe data i henhold til teamkatalogen
-# (indirekte knyttet til direktoratet)
+# velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, og eksluderer eksterne (konsulenter)
 table = "ansatte_plus_teamkatalog_raw"
 SOURCE_TABLES_SQL_QUERY[table] = f"""
     SELECT {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
     FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
     WHERE
         orgniv1_kode = "80"
-        OR team    IS NOT NULL
-        OR klynge  IS NOT NULL
-        OR omrade  IS NOT NULL
-        OR roles   IS NOT NULL
-        OR roller  IS NOT NULL
+    AND
+        sektor not like "Ekstern%"
     """
 
 table = "ansatte_plus_teamkatalog_roller_raw"
@@ -168,11 +162,8 @@ SOURCE_TABLES_SQL_QUERY[table] = f"""
     FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
     WHERE
         orgniv1_kode = "80"
-        OR team    IS NOT NULL
-        OR klynge  IS NOT NULL
-        OR omrade  IS NOT NULL
-        OR role    IS NOT NULL
-        OR rolle   IS NOT NULL
+    AND
+        sektor not like "Ekstern%"
     """
 
 
@@ -238,9 +229,26 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
         # sorter sånn at største gruppe kommer først NOTE: kan hende vi fjerner
         grouped_df = grouped_df.sort_values(by=["antall"], ascending=False)
 
-        # håndtering av kolonner som bare er i noen av settene
+        ## håndtering av kolonner som bare er i noen av settene
+        # gi bedre navn til roller fra teamkatalogen
         if "rolle" in grouped_df.columns:
             grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
+
+        # teknologiavdelingen har ett ekstra nivå på organisasjonskartet
+        # for å finne seksjon vil vi ta coalesce orgniv25 + orgniv3
+        # og bruke orgniv3 på alle untatt teknologi som har orgniv25 som vi bruker som seksjon
+        if "orgniv25_navn" in grouped_df.columns and "orgniv3_navn" in grouped_df.columns:
+            grouped_df["org_seksjon"] = grouped_df["orgniv25_navn"].combine_first(grouped_df["orgniv3_navn"])
+
+        if ("orgniv25_navn" in grouped_df.columns and "orgniv3_navn" not in grouped_df.columns) or (
+            "orgniv25_navn" not in grouped_df.columns and "orgniv3_navn" in grouped_df.columns
+        ):
+            logging.warning(
+                f"Fant tabell `{target_table}` med bare en kolonne for `orgniv25` eller `orgniv3` og mangler den andre, \
+                    feil i kildedata"
+            )
+
+        # TODO: gjør noe med grupper som blir for små? slå sammen noen små seksjoner?
 
         logging.debug(grouped_df.info())
         logging.debug(grouped_df.describe())
