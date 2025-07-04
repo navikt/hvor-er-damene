@@ -148,22 +148,25 @@ TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
 # velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, og eksluderer eksterne (konsulenter)
 table = "ansatte_plus_teamkatalog_raw"
 SOURCE_TABLES_SQL_QUERY[table] = f"""
-    SELECT {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
+    SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
     FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
     WHERE
         orgniv1_kode = "80"
     AND
-        sektor not like "Ekstern%"
+        sektor = 'NAV Statlig'
     """
+
+# bare statlige direkte ansatte nå
+# "sektor not like "Ekstern%" ville inkludere kommunale ansatte også
 
 table = "ansatte_plus_teamkatalog_roller_raw"
 SOURCE_TABLES_SQL_QUERY[table] = f"""
-    SELECT {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
+    SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
     FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
     WHERE
         orgniv1_kode = "80"
     AND
-        sektor not like "Ekstern%"
+        sektor = 'NAV Statlig'
     """
 
 
@@ -187,7 +190,28 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     if "orgniv25_navn" in output_df.columns and "orgniv3_navn" in output_df.columns:
         output_df["org_seksjon"] = output_df["orgniv25_navn"].combine_first(output_df["orgniv3_navn"])
 
+    # send warning om NaN/Null verdier i spesifikke kolonner, datafeil
+    if "aldersgruppe" in output_df.columns and output_df["aldersgruppe"].isna().any():
+        logging.warning("Aldersgruppe inneholder NA-verdier, sjekk for feil i kilde")
+        logging.warning("Skriver ut 'Ukjent alder' til dashboard")
+    if "ansiennitetsgruppe" in output_df.columns and output_df["ansiennitetsgruppe"].isna().any():
+        logging.warning("Ansiennitetsgruppe inneholder NA-verdier, sjekk for feil i kilde")
+        logging.warning("Skriver ut 'Ukjent ansettelsesår' til dashboard")
+    if "kjonn" in output_df.columns and output_df["kjonn"].isna().any():
+        logging.warning("Kjønn inneholder NA-verdier, sjekk for feil i pipeline da kildedata skal være filtrert")
+        logging.warning("Skriver ut 'Ukjent kjønn' til dashboard")
+
+    # generisk erstatning
     output_df = output_df.fillna("Ukjent")
+
+    # erstatt med mer spesifikke brukervennlige verdier for disse kolonnene
+    output_df[["aldersgruppe"]] = output_df[["aldersgruppe"]].replace({"Ukjent": "Ukjent alder"})
+    output_df[["ansiennitetsgruppe"]] = output_df[["ansiennitetsgruppe"]].replace({"Ukjent": "Ukjent ansettelsesår"})
+    output_df[["kjonn"]] = output_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
+
+    # hvorfor erstatte her og ikke over? fordi kategorisk data-type i noen kolonner crasher om man sender inn en ny verdi
+    # OGSÅ når ikke noe skal erstattes, så man kan ikke fillna med forskjellige verdier per kolonne om noen kolonner er kategorisk
+    # og skal ha en annen fill-verdi
 
     return output_df
 
