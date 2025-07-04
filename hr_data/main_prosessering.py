@@ -66,7 +66,7 @@ SOURCE_TABLES_AND_COLUMNS = {
         "kjonn",
         "alder",
         "ansatt_fra_aar",
-        "ledernivå",
+        "lederniva",
         "orgniv1_navn",
         "orgniv2_navn",
         "orgniv25_navn",
@@ -81,7 +81,7 @@ SOURCE_TABLES_AND_COLUMNS = {
         "kjonn",
         "alder",
         "ansatt_fra_aar",
-        "ledernivå",
+        "lederniva",
         "orgniv1_navn",
         "orgniv2_navn",
         "orgniv25_navn",
@@ -181,6 +181,12 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     output_df["ansiennitetsgruppe"] = current_year - output_df["ansiennitetsgruppe"].astype(int)
     output_df = df_aggregate_worked_year_groups(output_df, worked_years_column="ansiennitetsgruppe")
 
+    # teknologiavdelingen har ett ekstra nivå på organisasjonskartet
+    # for å finne seksjon vil vi ta coalesce orgniv25 + orgniv3
+    # og bruke orgniv3 på alle untatt teknologi som har orgniv25 som vi bruker som seksjon
+    if "orgniv25_navn" in output_df.columns and "orgniv3_navn" in output_df.columns:
+        output_df["org_seksjon"] = output_df["orgniv25_navn"].combine_first(output_df["orgniv3_navn"])
+
     output_df = output_df.fillna("Ukjent")
 
     return output_df
@@ -233,20 +239,6 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
         # gi bedre navn til roller fra teamkatalogen
         if "rolle" in grouped_df.columns:
             grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
-
-        # teknologiavdelingen har ett ekstra nivå på organisasjonskartet
-        # for å finne seksjon vil vi ta coalesce orgniv25 + orgniv3
-        # og bruke orgniv3 på alle untatt teknologi som har orgniv25 som vi bruker som seksjon
-        if "orgniv25_navn" in grouped_df.columns and "orgniv3_navn" in grouped_df.columns:
-            grouped_df["org_seksjon"] = grouped_df["orgniv25_navn"].combine_first(grouped_df["orgniv3_navn"])
-
-        if ("orgniv25_navn" in grouped_df.columns and "orgniv3_navn" not in grouped_df.columns) or (
-            "orgniv25_navn" not in grouped_df.columns and "orgniv3_navn" in grouped_df.columns
-        ):
-            logging.warning(
-                f"Fant tabell `{target_table}` med bare en kolonne for `orgniv25` eller `orgniv3` og mangler den andre, \
-                    feil i kildedata"
-            )
 
         # TODO: gjør noe med grupper som blir for små? slå sammen noen små seksjoner?
 
