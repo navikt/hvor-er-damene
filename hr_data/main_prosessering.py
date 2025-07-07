@@ -14,6 +14,7 @@ import os
 import sys
 from pathlib import Path
 
+import google.cloud.bigquery.exceptions as bq_exceptions
 import pandas as pd
 from google.cloud.bigquery import Client
 
@@ -140,9 +141,10 @@ TARGET_TABLES_LIST = list(TARGET_TABLE_TO_SOURCE_TABLE_MAPPING.keys())
 # funksjonalitet for å definere sql-spørringen som skal kjøres på hver tabell
 SOURCE_TABLES_SQL_QUERY = {}
 # hver kildetabell blir lastet inn som ett dataframe
-BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
+BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
 # vi lager nye dataframes som skal ende opp som nye bigquery tabeller
-TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame] = {}
+TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
+# None betyr error i laging av df-en
 
 # definer SQL spørringer
 # velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, og eksluderer eksterne (konsulenter)
@@ -270,16 +272,36 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
     logging.info("Kjører i prod environment")
 
     bq_client: Client = tk_funksjoner.create_client(PROD_PROJECT_ID, SA_KEY_NAME)
+    bigquery_data_error: bool = False
 
     # hent data fra BigQuery
     for source_table, fetch_query in SOURCE_TABLES_SQL_QUERY.items():
         if fetch_query:
-            logging.info(f"Henter data fra BigQuery-tabellen `{source_table}`")
-            logging.debug(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
-            big_query_result_df = bq_client.query(fetch_query).to_dataframe()
+            try:  # ikke kræsj alt av data-henting fordi en tabell feilet
+                logging.info(f"Henter data fra BigQuery-tabellen `{source_table}`")
+                logging.debug(f"Kolonner som hentes: {SOURCE_TABLES_AND_COLUMNS[source_table]}")
+                big_query_result_df = bq_client.query(fetch_query).to_dataframe()
 
-            BQ_TABLE_DF_CONTAINER[source_table] = big_query_result_df
-            logging.info(f"Hentet {big_query_result_df.shape[0]} rader og {big_query_result_df.shape[1]} kolonner")
+                BQ_TABLE_DF_CONTAINER[source_table] = big_query_result_df
+                logging.info(f"Hentet {big_query_result_df.shape[0]} rader og {big_query_result_df.shape[1]} kolonner")
+                bigquery_data_error: bool = False
+
+            except bq_exceptions.BigQueryError as e:
+                logging.error(
+                    f"Databasefeil ved henting av data fra bigquery (sannsynligvis feil eller ikke-eksisterende tabell-navn): \
+                    \n{e}"
+                )
+                logging.error(f"Tabellnavn: `{source_table}`")
+                logging.error(f"SQL-spørring som feilet: `{fetch_query}`")
+                BQ_TABLE_DF_CONTAINER[source_table] = None  # ingen data ble hentet, så lagrer None i containeren
+                bigquery_data_error: bool = True
+
+                continue
+            except Exception as e:
+                logging.error(f"Feil ved henting av data fra bigquery: \n{e}")
+                BQ_TABLE_DF_CONTAINER[source_table] = None
+                bigquery_data_error: bool = True
+                continue
 
         else:
             logging.info(f"Skipping `{source_table}` as no columns were specified")
@@ -289,62 +311,79 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
         # pipeline har en inkludert copy-operasjon
         # så vi forbereder ett nytt dataframe for hver target som en kopi av kilde-tabellene
         # (som kan bruke samme kilde flere ganger)
-        TARGET_TABLE_DF_CONTAINER[target_table_name] = bigquery_df_process_pipeline(BQ_TABLE_DF_CONTAINER[source_table_name])
+        bigquery_df = BQ_TABLE_DF_CONTAINER[source_table_name]
+        if bigquery_df is not None:
+            TARGET_TABLE_DF_CONTAINER[target_table_name] = bigquery_df_process_pipeline(bigquery_df)
+        else:
+            logging.error(f"Kunne ikke prosessere data for `{target_table_name}` fordi henting av kildedata hadde en feil")
+            TARGET_TABLE_DF_CONTAINER[target_table_name] = None
+            continue
 
     # lag target tabeller som skal lastes opp i BigQuery som resultat til bruk av backend/frontend
     for target_table in TARGET_TABLES_LIST:
-        # grupperer på gitte kolonner og teller opp
-        # vi ønsker en rad per mulige kombinasjoner av kjønn, aldersgruppe, ansiennitetsgruppe, avdeling, etc.
-        # med antall hvor mange som passer i disse kombinasjonene
-        grouped_df = (
-            TARGET_TABLE_DF_CONTAINER[target_table]
-            .groupby(TARGET_TABLE_COLUMNS_TO_GROUP_BY[target_table], dropna=False, as_index=False, observed=True)
-            .size()
-        )
-
-        grouped_df = grouped_df.rename(columns={"size": "antall"})  # type: ignore ,wrong inference from .size()
-        # sorter sånn at største gruppe kommer først NOTE: kan hende vi fjerner
-        grouped_df = grouped_df.sort_values(by=["antall"], ascending=False)
-
-        ## håndtering av kolonner som bare er i noen av settene
-        # gi bedre navn til roller fra teamkatalogen
-        if "rolle" in grouped_df.columns:
-            grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
-
-        # TODO: gjør noe med grupper som blir for små? slå sammen noen små seksjoner?
-
-        logging.debug(grouped_df.info())
-        logging.debug(grouped_df.describe())
-        if not DAG_NODE:
-            grouped_df.to_csv(f"test_grouped_df_{target_table}.csv", index=True, index_label="index")
-            logging.debug(f"Skrev prosessert data til `test_grouped_df_{target_table}.csv` for inspeksjon")
-
-        if upload_to_bq:
-            bq_funksjoner.bigquery_upload_hr_df(
-                hr_df=grouped_df,
-                PROJECT_ID=PROD_PROJECT_ID,
-                SA_KEY_NAME=SA_KEY_NAME,
-                DATASET=PROCESSED_DATASET,
-                TABLE_NAME=target_table,
-                bq_client_premade=bq_client,
-            )
-            logging.info(f"Lastet opp {grouped_df.shape[0]} rader til BigQuery-tabellen `{target_table}`")
+        target_table_source = TARGET_TABLE_DF_CONTAINER[target_table]
+        if target_table_source is None:
+            logging.error(f"Kunne ikke prosessere data for `{target_table}` fordi henting av kildedata hadde en feil")
+            continue
         else:
-            logging.info(f"""\nWould upload:
-            bq_funksjoner.bigquery_upload_hr_df(
-                hr_df=grouped_df,
-                PROJECT_ID={PROD_PROJECT_ID},
-                SA_KEY_NAME={SA_KEY_NAME},
-                DATASET={PROCESSED_DATASET},
-                TABLE_NAME={target_table},
-                bq_client_premade=bq_client,
-            )
-            """)
+            # grupperer på gitte kolonner og teller opp
+            # vi ønsker en rad per mulige kombinasjoner av kjønn, aldersgruppe, ansiennitetsgruppe, avdeling, etc.
+            # med antall hvor mange som passer i disse kombinasjonene
+            grouped_df = target_table_source.groupby(
+                TARGET_TABLE_COLUMNS_TO_GROUP_BY[target_table], dropna=False, as_index=False, observed=True
+            ).size()
 
+            grouped_df = grouped_df.rename(columns={"size": "antall"})  # type: ignore ,wrong inference from .size()
+            # sorter sånn at største gruppe kommer først NOTE: kan hende vi fjerner
+            grouped_df = grouped_df.sort_values(by=["antall"], ascending=False)
+
+            ## håndtering av kolonner som bare er i noen av settene
+            # gi bedre navn til roller fra teamkatalogen
+            if "rolle" in grouped_df.columns:
+                grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
+
+            # TODO: gjør noe med grupper som blir for små? slå sammen noen små seksjoner?
+
+            logging.debug(grouped_df.info())
+            logging.debug(grouped_df.describe())
+            if not DAG_NODE:
+                grouped_df.to_csv(f"test_grouped_df_{target_table}.csv", index=True, index_label="index")
+                logging.debug(f"Skrev prosessert data til `test_grouped_df_{target_table}.csv` for inspeksjon")
+
+            if upload_to_bq:
+                try:
+                    bq_funksjoner.bigquery_upload_hr_df(
+                        hr_df=grouped_df,
+                        PROJECT_ID=PROD_PROJECT_ID,
+                        SA_KEY_NAME=SA_KEY_NAME,
+                        DATASET=PROCESSED_DATASET,
+                        TABLE_NAME=target_table,
+                        bq_client_premade=bq_client,
+                    )
+                    logging.info(f"Lastet opp {grouped_df.shape[0]} rader til BigQuery-tabellen `{target_table}`")
+                except bq_exceptions.BigQueryError as e:
+                    logging.error(f"Feil ved opplasting av data til BigQuery-tabellen `{target_table}`: \n{e}")
+                    bigquery_data_error = True
+                    continue
+            else:
+                logging.info(f"""\nWould upload:
+                bq_funksjoner.bigquery_upload_hr_df(
+                    hr_df=grouped_df,
+                    PROJECT_ID={PROD_PROJECT_ID},
+                    SA_KEY_NAME={SA_KEY_NAME},
+                    DATASET={PROCESSED_DATASET},
+                    TABLE_NAME={target_table},
+                    bq_client_premade=bq_client,
+                )
+                """)
+
+    if bigquery_data_error is True:
+        logging.error("En eller flere BigQuery-tabeller hadde en feil ved henting av data, se logg for detaljer")
     return 0
 
 
 def dev_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
+    # NOTE: dev struktur svarer ikke til det som brukes i prod lenger
     if not DAG_NODE:
         logging.getLogger().setLevel(logging.DEBUG)
 
