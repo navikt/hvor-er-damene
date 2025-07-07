@@ -102,8 +102,8 @@ TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
         "kjonn",
         "aldersgruppe",
         "ansiennitetsgruppe",
-        "orgniv1_navn",
-        "orgniv2_navn",
+        "orgniv1_navn",  # direktorat (skal bare være 1)
+        "orgniv2_navn",  # avdeling
         "org_seksjon",  # seksjon er en ny kolonne som er laget av coalesce orgniv25 + orgniv3
     ],
     "ansatt_gruppert_tk_medlemskap_antall": [
@@ -200,20 +200,51 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     if "kjonn" in output_df.columns and output_df["kjonn"].isna().any():
         logging.warning("Kjønn inneholder NA-verdier, sjekk for feil i pipeline da kildedata skal være filtrert")
         logging.warning("Skriver ut 'Ukjent kjønn' til dashboard")
+    if "omrade" in output_df.columns and output_df["omrade"].isna().any():
+        logging.debug("Knytning til teamkatalog har NA-verdier: er som forventet")
 
     # generisk erstatning
     output_df = output_df.fillna("Ukjent")
 
     # erstatt med mer spesifikke brukervennlige verdier for disse kolonnene
-    output_df[["aldersgruppe"]] = output_df[["aldersgruppe"]].replace({"Ukjent": "Ukjent alder"})
-    output_df[["ansiennitetsgruppe"]] = output_df[["ansiennitetsgruppe"]].replace({"Ukjent": "Ukjent ansettelsesår"})
-    output_df[["kjonn"]] = output_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
+    output_df = nan_to_user_friendly_string(output_df)
 
     # hvorfor erstatte her og ikke over? fordi kategorisk data-type i noen kolonner crasher om man sender inn en ny verdi
     # OGSÅ når ikke noe skal erstattes, så man kan ikke fillna med forskjellige verdier per kolonne om noen kolonner er kategorisk
     # og skal ha en annen fill-verdi
 
     return output_df
+
+
+def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Erstatt gitte kolonners NA-verdier med brukervennlige verdier som kan vises i endelig dashboard
+
+    Ny tekst som skal brukes avhenger av kolonnen som erstattes, så skriver inn begge manuelt
+
+    Alle NA-verdier i kildedata skal være fylt inn med "Ukjent" allerede
+    """
+    if "aldersgruppe" in input_df.columns:
+        input_df[["aldersgruppe"]] = input_df[["aldersgruppe"]].replace({"Ukjent": "Ukjent alder"})
+    if "ansiennitetsgruppe" in input_df.columns:
+        input_df[["ansiennitetsgruppe"]] = input_df[["ansiennitetsgruppe"]].replace({"Ukjent": "Ukjent ansettelsesår"})
+    if "kjonn" in input_df.columns:
+        input_df[["kjonn"]] = input_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
+    # teamkatalog tilknytning
+    if "omrade" in input_df.columns:
+        input_df[["omrade"]] = input_df[["omrade"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "team" in input_df.columns:
+        input_df[["team"]] = input_df[["team"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "rolle" in input_df.columns:
+        input_df[["rolle"]] = input_df[["rolle"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "roller" in input_df.columns:
+        input_df[["roller"]] = input_df[["roller"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "role" in input_df.columns:
+        input_df[["role"]] = input_df[["role"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "roles" in input_df.columns:
+        input_df[["roles"]] = input_df[["roles"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+
+    return input_df
 
 
 def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
