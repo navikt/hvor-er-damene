@@ -106,6 +106,7 @@ TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
         "orgniv1_navn",  # direktorat (skal bare være 1)
         "orgniv2_navn",  # avdeling
         "org_seksjon",  # seksjon er en ny kolonne som er laget av coalesce orgniv25 + orgniv3
+        "lederniva",  # tall fra hr-systemet om hierarkiet for lederskap
     ],
     "ansatt_gruppert_tk_medlemskap_antall": [
         "kjonn",
