@@ -154,10 +154,16 @@ SOURCE_TABLES_SQL_QUERY[table] = f"""
         orgniv1_kode = "80"
     AND
         sektor = 'NAV Statlig'
+    AND
+        orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
     """
 
-# bare statlige direkte ansatte nå
+# NOTE: bare statlige direkte ansatte nå
 # "sektor not like "Ekstern%" ville inkludere kommunale ansatte også
+
+# NOTE: orgniv2_kode: filtrert på avdelinger som er i organisasjonskartet til NAV, og også i teamkatalog/NOM
+# vi filtrerer ut organisatorisk som at det fins en velferdsdirektør "avdeling" som bare har 1 medlem
+# disse små avdelingene som ikke er på kartet er ikke interessante statistisk sett
 
 table = "ansatte_plus_teamkatalog_roller_raw"
 SOURCE_TABLES_SQL_QUERY[table] = f"""
@@ -167,6 +173,8 @@ SOURCE_TABLES_SQL_QUERY[table] = f"""
         orgniv1_kode = "80"
     AND
         sektor = 'NAV Statlig'
+    AND
+        orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
     """
 
 
@@ -189,6 +197,14 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     # og bruke orgniv3 på alle untatt teknologi som har orgniv25 som vi bruker som seksjon
     if "orgniv25_navn" in output_df.columns and "orgniv3_navn" in output_df.columns:
         output_df["org_seksjon"] = output_df["orgniv25_navn"].combine_first(output_df["orgniv3_navn"])
+
+    # fjern potensiell whitespace i avelinger og seksjoner
+    output_df["orgniv1_navn"] = output_df["orgniv1_navn"].str.strip()
+    output_df["orgniv2_navn"] = output_df["orgniv2_navn"].str.strip()
+    if "org_seksjon" in output_df.columns:
+        output_df["org_seksjon"] = output_df["org_seksjon"].str.strip()
+    if "omrade" in output_df.columns:
+        output_df["omrade"] = output_df["omrade"].str.strip()
 
     # send warning om NaN/Null verdier i spesifikke kolonner, datafeil
     if "aldersgruppe" in output_df.columns and output_df["aldersgruppe"].isna().any():
@@ -225,9 +241,9 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
     Alle NA-verdier i kildedata skal være fylt inn med "Ukjent" allerede
     """
     if "aldersgruppe" in input_df.columns:
-        input_df[["aldersgruppe"]] = input_df[["aldersgruppe"]].replace({"Ukjent": "Ukjent alder"})
+        input_df["aldersgruppe"] = input_df["aldersgruppe"].cat.rename_categories({"Ukjent": "Ukjent alder"})
     if "ansiennitetsgruppe" in input_df.columns:
-        input_df[["ansiennitetsgruppe"]] = input_df[["ansiennitetsgruppe"]].replace({"Ukjent": "Ukjent ansettelsesår"})
+        input_df["ansiennitetsgruppe"] = input_df["ansiennitetsgruppe"].cat.rename_categories({"Ukjent": "Ukjent ansettelsesår"})
     if "kjonn" in input_df.columns:
         input_df[["kjonn"]] = input_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
     # teamkatalog tilknytning
