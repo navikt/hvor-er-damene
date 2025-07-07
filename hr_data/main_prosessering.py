@@ -462,6 +462,11 @@ def main(upload_to_bq: bool = False) -> int:
     PROD_ENV = os.getenv("PROD_ENV", None)  # set in production env to process real data
     DAG_NODE = os.getenv("DAG_NODE", None)  # set on node running airflow to avoid file writes
 
+    if DAG_NODE:
+        logging.info("Kjører i Airflow som DAG")
+    else:
+        logging.info("Kjører lokalt")
+
     if PROD_ENV:
         retcode = prod_main(PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 

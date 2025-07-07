@@ -33,7 +33,7 @@ with DAG(
         repo="navikt/hvor-er-damene",
         script_path="hr_data/hr_data_til_bq.py",
         requirements_path="requirements_bq.txt",
-        # use_uv_pip_install=True,
+        use_uv_pip_install=True,
         slack_channel="#team-heda",
         allowlist=allowlist,
     )
@@ -44,7 +44,7 @@ with DAG(
         repo="navikt/hvor-er-damene",
         script_path="hr_data/main_prosessering.py",
         requirements_path="requirements_bq.txt",
-        # use_uv_pip_install=True,
+        use_uv_pip_install=True,
         slack_channel="#team-heda",
         allowlist=allowlist,
         extra_envs={
