@@ -248,6 +248,14 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
         input_df["ansiennitetsgruppe"] = input_df["ansiennitetsgruppe"].cat.rename_categories({"Ukjent": "Ukjent ansettelsesår"})
     if "kjonn" in input_df.columns:
         input_df[["kjonn"]] = input_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
+    if "sektor" in input_df.columns:
+        input_df[["sektor"]] = input_df[["sektor"]].replace({"Ukjent": "Ukjent ansattstatus"})
+    if "stillingsnavn" in input_df.columns:
+        # ekstra erstatning her, for spesifikk kategori med manglende data vi får fra hr
+        input_df[["stillingsnavn"]] = input_df[["stillingsnavn"]].replace(
+            {"Ukjent": "Ukjent stilling", "Statlig - Mangler registrering i Agresso": "Ukjent stilling"}
+        )
+    # NOTE: har vurdert å slå sammen små stillingsgrupper til "Annen stilling", men har ikke gjort det til slutt
     # teamkatalog tilknytning
     if "omrade" in input_df.columns:
         input_df[["omrade"]] = input_df[["omrade"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
