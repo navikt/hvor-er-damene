@@ -26,6 +26,7 @@ with DAG(
     start_date=datetime(2025, 6, 12, tzinfo=timezone("Europe/Oslo")),
     catchup=False,
 ) as dag:
+    # Speiler Oracle db
     oracle_til_bigquery = python_operator(
         dag=dag,
         name="oracle_til_bigquery",
@@ -36,9 +37,10 @@ with DAG(
         slack_channel="#team-heda",
         allowlist=allowlist,
     )
-    bigquery_prosessering = python_operator(
+    # Prosessering av BigQuery-data, aggregerer og lager nye tabeller
+    bigquery_prosessering_aggregering = python_operator(
         dag=dag,
-        name="Prosessering av BigQuery-data, aggregerer og lager nye tabeller",
+        name="bigquery_prosessering_aggregering",
         repo="navikt/hvor-er-damene",
         script_path="hr_data/main_prosessering.py",
         requirements_path="requirements_bq.txt",
@@ -51,4 +53,4 @@ with DAG(
         },
     )
 
-    oracle_til_bigquery >> bigquery_prosessering  # type: ignore # blir brukt av DAG
+    oracle_til_bigquery >> bigquery_prosessering_aggregering  # type: ignore # blir brukt av DAG
