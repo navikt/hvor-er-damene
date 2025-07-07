@@ -3,7 +3,7 @@ name = "mangfold-dashboard"
 version = "0.2.1"
 description = "Støtter #team-heda for å lage dashboard i NAV"
 readme = "README.md"
-requires-python = "==3.12.11"
+requires-python = "==3.12.*"
 dependencies = [
     "pandas==2.3.0",
     "oracledb==3.2.0",
