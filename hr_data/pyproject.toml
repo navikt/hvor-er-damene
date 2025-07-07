@@ -1,0 +1,23 @@
+[project]
+name = "mangfold-dashboard"
+version = "0.2.1"
+description = "Støtter #team-heda for å lage dashboard i NAV"
+readme = "README.md"
+requires-python = "==3.12.11"
+dependencies = [
+    "pandas==2.3.0",
+    "oracledb==3.2.0",
+    "db-dtypes==1.4.2",
+    "pandas-gbq==0.29.1",
+    "google-cloud-bigquery==3.34.0",
+    "google-cloud-secret-manager==2.24.0",
+    "google-cloud-bigquery-storage==2.32.0",
+    "numpy==2.3.0",
+    "openpyxl==3.1.5",
+]
+
+# use command to make requirements file:
+# $ uv export --format requirements.txt --no-hashes >> requirements_bq_auto.txt
+
+[tool.uv]
+package = false
