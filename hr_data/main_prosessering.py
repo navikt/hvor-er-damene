@@ -209,6 +209,16 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     if "omrade" in output_df.columns:
         output_df["omrade"] = output_df["omrade"].str.strip()
 
+    if "lederniva" in output_df.columns:
+        if output_df["lederniva"].isna().any():
+            logging.warning("Lederenivå inneholder NA-verdier før konvertering til int, sjekk for feil")
+        try:
+            output_df["lederniva"] = pd.to_numeric(output_df["lederniva"], errors="raise", downcast="integer")
+        except ValueError as e:
+            logging.error(f"Problemer med konvertering av lederniva til ren integer: \n{e}")
+            logging.error("Skriver ut NaN-verdier der konvertering feilet")
+            output_df["lederniva"] = pd.to_numeric(output_df["lederniva"], errors="coerce", downcast="integer")
+
     # send warning om NaN/Null verdier i spesifikke kolonner, datafeil
     if "aldersgruppe" in output_df.columns and output_df["aldersgruppe"].isna().any():
         logging.warning("Aldersgruppe inneholder NA-verdier, sjekk for feil i kilde")
@@ -322,6 +332,7 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
         # (som kan bruke samme kilde flere ganger)
         bigquery_df = BQ_TABLE_DF_CONTAINER[source_table_name]
         if bigquery_df is not None:
+            logging.info(f"Prosesserer data for `{target_table_name}` fra kildetabellen `{source_table_name}`")
             TARGET_TABLE_DF_CONTAINER[target_table_name] = bigquery_df_process_pipeline(bigquery_df)
         else:
             logging.error(f"Kunne ikke prosessere data for `{target_table_name}` fordi henting av kildedata hadde en feil")
@@ -335,6 +346,10 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
             logging.error(f"Kunne ikke prosessere data for `{target_table}` fordi henting av kildedata hadde en feil")
             continue
         else:
+            # patch for å være sikker på unike verdier med ansettelse,
+            # teamkatalog kan ha flere tilknytninger men du kan ikke være ansatt flere steder
+            if target_table in ["ansatt_gruppert_hr_avdeling_antall", "ansatt_gruppert_hr_stilling_antall"]:
+                target_table_source = target_table_source.drop_duplicates(subset=["pseudo_key"], keep="first")
             # grupperer på gitte kolonner og teller opp
             # vi ønsker en rad per mulige kombinasjoner av kjønn, aldersgruppe, ansiennitetsgruppe, avdeling, etc.
             # med antall hvor mange som passer i disse kombinasjonene
