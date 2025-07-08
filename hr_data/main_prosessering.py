@@ -59,6 +59,7 @@ DEV_PROJECT_ID = "heda-dev-9df1"
 # endre her for tabellnavn som brukes i backend
 TEST_TABLE_NAME = "test_ansatte_direktoratet"
 
+## input fra bigquery
 # tabeller på big query, trenger ikke alle kolonner lokalt så spør bare om X kolonner
 # tabeller med tomme kolonner hoppes over
 SOURCE_TABLES_AND_COLUMNS = {
@@ -72,6 +73,7 @@ SOURCE_TABLES_AND_COLUMNS = {
         "orgniv2_navn",
         "orgniv25_navn",
         "orgniv3_navn",
+        "stillingsnavn",
         "team",
         "omrade",
         "roles",
@@ -96,6 +98,46 @@ SOURCE_TABLES_AND_COLUMNS = {
     ],
     "ansatte_teamkatalog_grupper_raw": [],
 }
+# funksjonalitet for å definere sql-spørringen som skal kjøres på hver tabell
+SOURCE_TABLES_SQL_QUERY = {}
+# hver kildetabell blir lastet inn som ett dataframe
+BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
+# None betyr feil i henting av data
+
+# definer SQL spørringer
+# velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, og eksluderer eksterne (konsulenter)
+table = "ansatte_plus_teamkatalog_raw"
+SOURCE_TABLES_SQL_QUERY[table] = f"""
+SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
+FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
+WHERE
+    orgniv1_kode = "80"
+AND
+    sektor = 'NAV Statlig'
+AND
+    orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
+"""
+
+# NOTE: bare statlige direkte ansatte nå
+# "sektor not like "Ekstern%" ville inkludere kommunale ansatte også
+
+# NOTE: orgniv2_kode: filtrert på avdelinger som er i organisasjonskartet til NAV, og også i teamkatalog/NOM
+# vi filtrerer ut organisatorisk som at det fins en velferdsdirektør "avdeling" som bare har 1 medlem
+# disse små avdelingene som ikke er på kartet er ikke interessante statistisk sett
+
+table = "ansatte_plus_teamkatalog_roller_raw"
+SOURCE_TABLES_SQL_QUERY[table] = f"""
+SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
+FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
+WHERE
+    orgniv1_kode = "80"
+AND
+    sektor = 'NAV Statlig'
+AND
+    orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
+"""
+
+## output til bigquery
 # vi vil ha output tabeller som er gruppert basert på disse kolonnene,
 # med ulike opphavs-tabeller som grupperes for å gi resultatene
 TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
@@ -127,6 +169,16 @@ TARGET_TABLE_COLUMNS_TO_GROUP_BY = {
         "ansiennitetsgruppe",
         "rolle",
     ],
+    "ansatt_gruppert_hr_ansatt_stilling_per_seksjon": [
+        "kjonn",
+        "aldersgruppe",
+        "ansiennitetsgruppe",
+        "stillingsnavn",
+        "orgniv1_navn",
+        "orgniv2_navn",
+        "org_seksjon",
+        "lederniva",
+    ],
 }
 # hvilken ny tabell skal lages basert på hvilken kildetabell
 # en kildetabell kan gi flere output-tabeller
@@ -135,50 +187,13 @@ TARGET_TABLE_TO_SOURCE_TABLE_MAPPING = {
     "ansatt_gruppert_tk_medlemskap_antall": "ansatte_plus_teamkatalog_raw",
     "ansatt_gruppert_hr_stilling_antall": "ansatte_plus_teamkatalog_roller_raw",
     "ansatt_gruppert_tk_roller_antall": "ansatte_plus_teamkatalog_roller_raw",
+    "ansatt_gruppert_hr_ansatt_stilling_per_seksjon": "ansatte_plus_teamkatalog_raw",
 }
 # slipp å definere target tabeller to ganger, hent fra dict over
 TARGET_TABLES_LIST = list(TARGET_TABLE_TO_SOURCE_TABLE_MAPPING.keys())
-
-# funksjonalitet for å definere sql-spørringen som skal kjøres på hver tabell
-SOURCE_TABLES_SQL_QUERY = {}
-# hver kildetabell blir lastet inn som ett dataframe
-BQ_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
 # vi lager nye dataframes som skal ende opp som nye bigquery tabeller
 TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
 # None betyr error i laging av df-en
-
-# definer SQL spørringer
-# velger ut bare ansatte som enten direkte er tilknyttet teknologidirektoratet, og eksluderer eksterne (konsulenter)
-table = "ansatte_plus_teamkatalog_raw"
-SOURCE_TABLES_SQL_QUERY[table] = f"""
-    SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
-    FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
-    WHERE
-        orgniv1_kode = "80"
-    AND
-        sektor = 'NAV Statlig'
-    AND
-        orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
-    """
-
-# NOTE: bare statlige direkte ansatte nå
-# "sektor not like "Ekstern%" ville inkludere kommunale ansatte også
-
-# NOTE: orgniv2_kode: filtrert på avdelinger som er i organisasjonskartet til NAV, og også i teamkatalog/NOM
-# vi filtrerer ut organisatorisk som at det fins en velferdsdirektør "avdeling" som bare har 1 medlem
-# disse små avdelingene som ikke er på kartet er ikke interessante statistisk sett
-
-table = "ansatte_plus_teamkatalog_roller_raw"
-SOURCE_TABLES_SQL_QUERY[table] = f"""
-    SELECT DISTINCT(pseudo_key), {", ".join(SOURCE_TABLES_AND_COLUMNS[table])}
-    FROM `{PROD_PROJECT_ID}.{HR_DATASET}.{table}`
-    WHERE
-        orgniv1_kode = "80"
-    AND
-        sektor = 'NAV Statlig'
-    AND
-        orgniv2_kode in ("843", "829", "832", "828", "857", "815", "821", "8202", "8204", "72")
-    """
 
 
 def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
@@ -332,7 +347,7 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
         # (som kan bruke samme kilde flere ganger)
         bigquery_df = BQ_TABLE_DF_CONTAINER[source_table_name]
         if bigquery_df is not None:
-            logging.info(f"Prosesserer data for `{target_table_name}` fra kildetabellen `{source_table_name}`")
+            logging.info(f"Prosesserer data tiltenkt `{target_table_name}` fra kildetabellen `{source_table_name}`")
             TARGET_TABLE_DF_CONTAINER[target_table_name] = bigquery_df_process_pipeline(bigquery_df)
         else:
             logging.error(f"Kunne ikke prosessere data for `{target_table_name}` fordi henting av kildedata hadde en feil")
