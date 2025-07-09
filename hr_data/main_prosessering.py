@@ -35,6 +35,9 @@ from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_tes
 
 ## program
 logging.basicConfig(level=logging.WARNING)
+error_flag_handler = bq_funksjoner.ErrorFlagHandler()
+# legg til en logger som bare sier True om en .error ble logget noe sted
+logging.getLogger().addHandler(error_flag_handler)
 
 # variabler kan bli hentet av andre filer uten å kjøre main
 N_ROWS_TEST_DATA = 100
@@ -57,6 +60,7 @@ PROD_PROJECT_ID = "heda-prod-2664"
 DEV_PROJECT_ID = "heda-dev-9df1"
 
 # endre her for tabellnavn som brukes i backend
+METADATA_TABLE_NAME = "ansatte_data_status_metadata"
 TEST_TABLE_NAME = "test_ansatte_direktoratet"
 
 ## input fra bigquery
@@ -299,7 +303,60 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
     return input_df
 
 
-def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
+def make_and_upload_metadata_table(
+    CURRENT_PROJECT_ID: str, bigquery_data_error: bool, bq_client_premade: Client, upload_to_bq: bool = False
+) -> bool:
+    """
+    Lager metadata-tabell som lastes opp i BigQuery
+
+    Inkluderer status på datalast og logging i kolonner
+    """
+    upload_metadata_error = False
+
+    # sjekk om det var noen tidligere .error i koden
+    any_logged_errors: bool = error_flag_handler.error_logged
+
+    metadata_dict = {
+        "Status datalast": f"{'OK' if not bigquery_data_error else 'ERROR'}",
+        "Status logging": f"{'Feil skjedde, sjekk logger i airflow' if any_logged_errors else 'Ingen feil logget'}",
+        "Datalast dato timestamp": pd.Timestamp.now(tz="Europe/Oslo"),
+        "Datalast dato string": pd.Timestamp.now(tz="Europe/Oslo").strftime("%Y-%m-%d %H:%M:%S%z"),
+    }
+
+    metadata_df = pd.DataFrame(metadata_dict)
+
+    if upload_to_bq:
+        try:
+            bq_funksjoner.bigquery_upload_hr_df(
+                hr_df=metadata_df,
+                PROJECT_ID=CURRENT_PROJECT_ID,
+                SA_KEY_NAME=SA_KEY_NAME,
+                DATASET=PROCESSED_DATASET,
+                TABLE_NAME=METADATA_TABLE_NAME,
+                bq_client_premade=bq_client_premade,
+                write_disposition_setting="WRITE_APPEND",
+            )
+        except bq_exceptions.BigQueryError as e:
+            logging.error(f"Feil ved opplasting av metadata til BigQuery-tabellen `{METADATA_TABLE_NAME}`: \n{e}")
+            upload_metadata_error = True
+        else:
+            logging.info(f"Lastet opp {metadata_df.shape[0]} rad metadata til BigQuery-tabellen `{METADATA_TABLE_NAME}`")
+    else:
+        logging.info(f"""\nWould upload metadata via:
+        bq_funksjoner.bigquery_upload_hr_df(
+            hr_df=metadata_df,
+            PROJECT_ID={CURRENT_PROJECT_ID},
+            SA_KEY_NAME={SA_KEY_NAME},
+            DATASET={PROCESSED_DATASET},
+            TABLE_NAME={METADATA_TABLE_NAME},
+            bq_client_premade=bq_client,
+            write_disposition_setting="WRITE_TRUNCATE",
+        )
+        """)
+    return upload_metadata_error
+
+
+def prod_main(CURRENT_PROJECT_ID: str, PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
     if not DAG_NODE:  # kjører lokal debug
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -398,6 +455,7 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
                         DATASET=PROCESSED_DATASET,
                         TABLE_NAME=target_table,
                         bq_client_premade=bq_client,
+                        write_disposition_setting="WRITE_TRUNCATE",
                     )
                     logging.info(f"Lastet opp {grouped_df.shape[0]} rader til BigQuery-tabellen `{target_table}`")
                 except bq_exceptions.BigQueryError as e:
@@ -413,19 +471,34 @@ def prod_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = F
                     DATASET={PROCESSED_DATASET},
                     TABLE_NAME={target_table},
                     bq_client_premade=bq_client,
+                    write_disposition_setting="WRITE_TRUNCATE",
                 )
                 """)
 
+    metadata_upload_error = make_and_upload_metadata_table(
+        CURRENT_PROJECT_ID=PROD_PROJECT_ID,
+        bigquery_data_error=bigquery_data_error,
+        bq_client_premade=bq_client,
+        upload_to_bq=upload_to_bq,
+    )
+
     if bigquery_data_error is True:
-        logging.error("En eller flere BigQuery-tabeller hadde en feil ved henting av data, se logg for detaljer")
+        logging.error("En eller flere BigQuery-tabeller hadde en feil ved henting/opplasting av data, se logg for detaljer")
+        return 1
+    if metadata_upload_error is True:
+        logging.error("Feil ved opplasting av metadata til BigQuery-tabellen, se logg for detaljer")
+        return 1
+
+    # default
     return 0
 
 
-def dev_main(PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
+def dev_main(CURRENT_PROJECT_ID: str, PROD_ENV: str | None, DAG_NODE: str | None, upload_to_bq: bool = False) -> int:
     # NOTE: dev struktur svarer ikke til det som brukes i prod lenger
     if not DAG_NODE:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    PROD_ENV = os.getenv("PROD_ENV", None)
     if PROD_ENV:
         raise ValueError(
             f"Du har satt PROD_ENV variabelen til å indikere prod-environment etter å ha startet programmet. Ikke gjør det. \
@@ -499,11 +572,16 @@ def main(upload_to_bq: bool = False) -> int:
         logging.info("Kjører lokalt")
 
     if PROD_ENV:
-        retcode = prod_main(PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
+        CURRENT_PROJECT_ID = PROD_PROJECT_ID
+    else:
+        CURRENT_PROJECT_ID = DEV_PROJECT_ID
+
+    if PROD_ENV:
+        retcode = prod_main(CURRENT_PROJECT_ID, PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
     # not prod => dev environment
     else:
-        retcode = dev_main(PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
+        retcode = dev_main(CURRENT_PROJECT_ID, PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
     return retcode
 
