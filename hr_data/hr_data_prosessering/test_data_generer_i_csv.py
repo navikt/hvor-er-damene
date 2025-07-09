@@ -111,6 +111,8 @@ def generate_tk_test_data(num_rows: int, id_col: np.ndarray | None = None):
     if id_col is None:
         id_col = generate_row_ids(num_rows)
 
+    # sjekk mot excel fra eksport hos teamkatalogen for å finne kolonner som er nyttige til test
+
     # avdeling, seksjon noen tilhører er helt tilfeldig enda det burde henge sammen med tittel, men det er ikke så farlig
     test_org_avdelinger = {"Teknologi": 0.4, "HR": 0.2, "Sikkerhet": 0.2, "Økonomi": 0.1, "Administrasjon": 0.1}
 
