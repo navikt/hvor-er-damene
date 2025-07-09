@@ -18,12 +18,8 @@ dependencies = [
 
 # use command to make requirements file:
 # $ uv export --format requirements.txt --no-hashes >> requirements_bq_auto.txt
-
 [tool.uv]
 package = false
 
 [dependency-groups]
-dev = [
-    "ruff>=0.12.2",
-    "ty>=0.0.1a14",
-]
+dev = ["ruff>=0.12.2", "ty>=0.0.1a14"]

@@ -26,7 +26,7 @@ Se hoved-dokumentering i [README.md](../README.md)
 ### uv / pip
 Se [`requirements_bq.txt`](../requirements_bq.txt) for nødvendige pakker til `hr_data` prosjektet. Kan brukes av standard Python metoder, DAG og sommerstudenter kjører [uv](https://docs.astral.sh/uv/) som pakkeløsning. Sett opp pakker i et uv-environment med:
 
-```uv pip install ../requirements_bq.txt```
+```uv pip install -r ../requirements_bq.txt```
 
 Det er også en egen [`pyproject.toml`](hr_data/pyproject.toml) fil for under-prosjektet.
 
