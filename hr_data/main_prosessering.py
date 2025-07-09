@@ -323,7 +323,7 @@ def make_and_upload_metadata_table(
         "Datalast dato string": pd.Timestamp.now(tz="Europe/Oslo").strftime("%Y-%m-%d %H:%M:%S%z"),
     }
 
-    metadata_df = pd.DataFrame(metadata_dict)
+    metadata_df = pd.DataFrame(metadata_dict, index=[0])
 
     if upload_to_bq:
         try:
