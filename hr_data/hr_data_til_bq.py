@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 
-import oracledb
+import oracledb  # ty: ignore (ty gir feil her for some reason)
 import pandas as pd
 from google.cloud import secretmanager
 
