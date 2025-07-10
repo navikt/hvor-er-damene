@@ -238,6 +238,10 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
             logging.error("Skriver ut NaN-verdier der konvertering feilet")
             output_df["lederniva"] = pd.to_numeric(output_df["lederniva"], errors="coerce", downcast="integer")
 
+        # gjør om verdier til brukervennlig tekst når vi garantert har ints, NA blir stående
+        # kan få nye NA-verdier hvis det dukker opp ints som ikke har en mapping, disse er ikke definert i hierarkiet
+        output_df = df_map_stillingsniva_til_titler(output_df, lederniva_column="lederniva")
+
     # send warning om NaN/Null verdier i spesifikke kolonner, datafeil
     if "aldersgruppe" in output_df.columns and output_df["aldersgruppe"].isna().any():
         logging.warning("Aldersgruppe inneholder NA-verdier, sjekk for feil i kilde")
@@ -285,6 +289,8 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
         input_df[["stillingsnavn"]] = input_df[["stillingsnavn"]].replace(
             {"Ukjent": "Ukjent stilling", "Statlig - Mangler registrering i Agresso": "Ukjent stilling"}
         )
+    if "lederniva" in input_df.columns:
+        input_df["lederniva"] = input_df["lederniva"].replace({"Ukjent": "Ukjent niva"})
     # NOTE: har vurdert å slå sammen små stillingsgrupper til "Annen stilling", men har ikke gjort det til slutt
     # teamkatalog tilknytning
     if "omrade" in input_df.columns:
@@ -299,6 +305,29 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
         input_df[["role"]] = input_df[["role"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
     if "roles" in input_df.columns:
         input_df[["roles"]] = input_df[["roles"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+
+    return input_df
+
+
+def df_map_stillingsniva_til_titler(input_df: pd.DataFrame, lederniva_column: str = "lederniva") -> pd.DataFrame:
+    """
+    Gjør om integers i dataen for ledernivå til brukervennlig tekst
+
+    nivåer som ikke er i mapping blir gjort om til NA, så kjør før erstatning av NA-verdier,
+    slike verdier er ikke veldefinert i hierarkiet
+
+    tekst som brukes er fra bruker-innspill
+    """
+    roller_mapping = {
+        1: "Arbeids- og velferdsdirektør",
+        2: "Direktør",
+        3: "Avdelingsdirektør",
+        4: "Seksjonssjef",
+        5: "Kontorsjef",
+        6: "Ressurs",
+    }
+
+    input_df[lederniva_column] = input_df[lederniva_column].map(roller_mapping)
 
     return input_df
 
