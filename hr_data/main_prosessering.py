@@ -346,10 +346,10 @@ def make_and_upload_metadata_table(
     any_logged_errors: bool = error_flag_handler.error_logged
 
     metadata_dict = {
-        "Status datalast": f"{'OK' if not bigquery_data_error else 'ERROR'}",
-        "Status logging": f"{'Feil skjedde, sjekk logger i airflow' if any_logged_errors else 'Ingen feil logget'}",
-        "Datalast dato timestamp": pd.Timestamp.now(tz="Europe/Oslo"),
-        "Datalast dato string": pd.Timestamp.now(tz="Europe/Oslo").strftime("%Y-%m-%d %H:%M:%S%z"),
+        "Status_datalast": f"{'OK' if not bigquery_data_error else 'ERROR'}",
+        "Status_logging": f"{'Feil skjedde, sjekk logger i airflow' if any_logged_errors else 'Ingen feil logget'}",
+        "Datalast_dato_timestamp": pd.Timestamp.now(tz="Europe/Oslo"),
+        "Datalast_dato_string": pd.Timestamp.now(tz="Europe/Oslo").strftime("%Y-%m-%d %H:%M:%S%z"),
     }
 
     metadata_df = pd.DataFrame(metadata_dict, index=[0])
