@@ -96,8 +96,8 @@ def df_aggregate_age_group(input_df: pd.DataFrame, age_column="aldersgruppe") ->
     """
     input_df[age_column] = pd.cut(
         input_df[age_column],
-        bins=[-1, 30, 50, 1000],
-        labels=["<30", "30-50", "50+"],
+        bins=[-1, 30, 55, 1000],
+        labels=["<30", "30-55", "55+"],
     )
 
     # patch: for å håndtere NaN senere, legg til en kategori for å fange opp ukjent
