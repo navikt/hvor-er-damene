@@ -14,6 +14,70 @@ sys.path.append("../..")
 from hr_data.hr_data_prosessering.df_funksjoner import read_test_data_csv, to_datetime_wrapper, write_test_data_csv
 
 
+def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Erstatt gitte kolonners NA-verdier med brukervennlige verdier som kan vises i endelig dashboard
+
+    Ny tekst som skal brukes avhenger av kolonnen som erstattes, så skriver inn begge manuelt
+
+    Alle NA-verdier i kildedata skal være fylt inn med "Ukjent" allerede
+    """
+    if "aldersgruppe" in input_df.columns:
+        input_df["aldersgruppe"] = input_df["aldersgruppe"].cat.rename_categories({"Ukjent": "Ukjent alder"})
+    if "ansiennitetsgruppe" in input_df.columns:
+        input_df["ansiennitetsgruppe"] = input_df["ansiennitetsgruppe"].cat.rename_categories({"Ukjent": "Ukjent ansettelsesår"})
+    if "kjonn" in input_df.columns:
+        input_df[["kjonn"]] = input_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
+    if "sektor" in input_df.columns:
+        input_df[["sektor"]] = input_df[["sektor"]].replace({"Ukjent": "Ukjent ansattstatus"})
+    if "stillingsnavn" in input_df.columns:
+        # ekstra erstatning her, for spesifikk kategori med manglende data vi får fra hr
+        input_df[["stillingsnavn"]] = input_df[["stillingsnavn"]].replace(
+            {"Ukjent": "Ukjent stilling", "Statlig - Mangler registrering i Agresso": "Ukjent stilling"}
+        )
+    if "lederniva" in input_df.columns:
+        input_df["lederniva"] = input_df["lederniva"].replace({"Ukjent": "Ukjent niva"})
+    # NOTE: har vurdert å slå sammen små stillingsgrupper til "Annen stilling", men har ikke gjort det til slutt
+    # teamkatalog tilknytning
+    if "omrade" in input_df.columns:
+        input_df[["omrade"]] = input_df[["omrade"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "team" in input_df.columns:
+        input_df[["team"]] = input_df[["team"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "rolle" in input_df.columns:
+        input_df[["rolle"]] = input_df[["rolle"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "roller" in input_df.columns:
+        input_df[["roller"]] = input_df[["roller"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "role" in input_df.columns:
+        input_df[["role"]] = input_df[["role"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+    if "roles" in input_df.columns:
+        input_df[["roles"]] = input_df[["roles"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
+
+    return input_df
+
+
+def df_map_stillingsniva_til_titler(input_df: pd.DataFrame, lederniva_column: str = "lederniva") -> pd.DataFrame:
+    """
+    Gjør om integers i dataen for ledernivå til brukervennlig tekst
+
+    nivåer som ikke er i mapping blir gjort om til NA, så kjør før erstatning av NA-verdier,
+    slike verdier er ikke veldefinert i hierarkiet
+
+    tekst som brukes er fra bruker-innspill
+    """
+    roller_mapping = {
+        1: "Arbeids- og velferdsdirektør",
+        2: "Direktør",
+        3: "Avdelingsdirektør",
+        4: "Seksjonssjef",
+        5: "Kontorsjef",
+        6: "Ressurs",
+    }
+
+    input_df[lederniva_column] = input_df[lederniva_column].map(roller_mapping)
+
+    return input_df
+
+
 def hr_data_map_roles_to_tk_names(input_df: pd.DataFrame, role_column: str = "rolle") -> pd.DataFrame:
     # laget manuelt fra å stirre på teamkatalogen
     roller_mapping = {

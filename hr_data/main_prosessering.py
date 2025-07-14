@@ -29,7 +29,9 @@ from hr_data.hr_data_prosessering.hr_data_prosessering import (
     df_aggregate_worked_year_groups,
     df_hr_process_pipeline,
     df_mangfold_join_pipeline,
+    df_map_stillingsniva_til_titler,
     hr_data_map_roles_to_tk_names,
+    nan_to_user_friendly_string,
 )
 from hr_data.hr_data_prosessering.test_data_generer_i_csv import generate_hr_test_data, generate_row_ids, generate_tk_test_data
 
@@ -268,70 +270,6 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     return output_df
 
 
-def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Erstatt gitte kolonners NA-verdier med brukervennlige verdier som kan vises i endelig dashboard
-
-    Ny tekst som skal brukes avhenger av kolonnen som erstattes, så skriver inn begge manuelt
-
-    Alle NA-verdier i kildedata skal være fylt inn med "Ukjent" allerede
-    """
-    if "aldersgruppe" in input_df.columns:
-        input_df["aldersgruppe"] = input_df["aldersgruppe"].cat.rename_categories({"Ukjent": "Ukjent alder"})
-    if "ansiennitetsgruppe" in input_df.columns:
-        input_df["ansiennitetsgruppe"] = input_df["ansiennitetsgruppe"].cat.rename_categories({"Ukjent": "Ukjent ansettelsesår"})
-    if "kjonn" in input_df.columns:
-        input_df[["kjonn"]] = input_df[["kjonn"]].replace({"Ukjent": "Ukjent kjønn"})
-    if "sektor" in input_df.columns:
-        input_df[["sektor"]] = input_df[["sektor"]].replace({"Ukjent": "Ukjent ansattstatus"})
-    if "stillingsnavn" in input_df.columns:
-        # ekstra erstatning her, for spesifikk kategori med manglende data vi får fra hr
-        input_df[["stillingsnavn"]] = input_df[["stillingsnavn"]].replace(
-            {"Ukjent": "Ukjent stilling", "Statlig - Mangler registrering i Agresso": "Ukjent stilling"}
-        )
-    if "lederniva" in input_df.columns:
-        input_df["lederniva"] = input_df["lederniva"].replace({"Ukjent": "Ukjent niva"})
-    # NOTE: har vurdert å slå sammen små stillingsgrupper til "Annen stilling", men har ikke gjort det til slutt
-    # teamkatalog tilknytning
-    if "omrade" in input_df.columns:
-        input_df[["omrade"]] = input_df[["omrade"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-    if "team" in input_df.columns:
-        input_df[["team"]] = input_df[["team"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-    if "rolle" in input_df.columns:
-        input_df[["rolle"]] = input_df[["rolle"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-    if "roller" in input_df.columns:
-        input_df[["roller"]] = input_df[["roller"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-    if "role" in input_df.columns:
-        input_df[["role"]] = input_df[["role"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-    if "roles" in input_df.columns:
-        input_df[["roles"]] = input_df[["roles"]].replace({"Ukjent": "Mangler tilknytning til teamkatalogen"})
-
-    return input_df
-
-
-def df_map_stillingsniva_til_titler(input_df: pd.DataFrame, lederniva_column: str = "lederniva") -> pd.DataFrame:
-    """
-    Gjør om integers i dataen for ledernivå til brukervennlig tekst
-
-    nivåer som ikke er i mapping blir gjort om til NA, så kjør før erstatning av NA-verdier,
-    slike verdier er ikke veldefinert i hierarkiet
-
-    tekst som brukes er fra bruker-innspill
-    """
-    roller_mapping = {
-        1: "Arbeids- og velferdsdirektør",
-        2: "Direktør",
-        3: "Avdelingsdirektør",
-        4: "Seksjonssjef",
-        5: "Kontorsjef",
-        6: "Ressurs",
-    }
-
-    input_df[lederniva_column] = input_df[lederniva_column].map(roller_mapping)
-
-    return input_df
-
-
 def make_and_upload_metadata_table(
     CURRENT_PROJECT_ID: str, bigquery_data_error: bool, bq_client_premade: Client, upload_to_bq: bool = False
 ) -> bool:
@@ -467,7 +405,8 @@ def prod_main(CURRENT_PROJECT_ID: str, PROD_ENV: str | None, DAG_NODE: str | Non
             if "rolle" in grouped_df.columns:
                 grouped_df = hr_data_map_roles_to_tk_names(grouped_df, role_column="rolle")
 
-            # TODO: gjør noe med grupper som blir for små? slå sammen noen små seksjoner?
+            # NOTE: grupper (seksjoner) som blir for små filtreres i backend
+            # tabell herfra blir stående med små grupper
 
             logging.debug(grouped_df.info())
             logging.debug(grouped_df.describe())
@@ -590,7 +529,7 @@ def dev_main(CURRENT_PROJECT_ID: str, PROD_ENV: str | None, DAG_NODE: str | None
 
 
 def main(upload_to_bq: bool = False) -> int:
-    """Main funksjon som knytter sammen metoder i andre filer"""
+    """Main funksjon som knytter sammen metoder - skilt i dev og prod sub-funksjoner"""
     # sjekk environment
     PROD_ENV = os.getenv("PROD_ENV", None)  # set in production env to process real data
     DAG_NODE = os.getenv("DAG_NODE", None)  # set on node running airflow to avoid file writes
@@ -608,7 +547,7 @@ def main(upload_to_bq: bool = False) -> int:
     if PROD_ENV:
         retcode = prod_main(CURRENT_PROJECT_ID, PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
-    # not prod => dev environment
+    # not prod -> dev environment
     else:
         retcode = dev_main(CURRENT_PROJECT_ID, PROD_ENV, DAG_NODE, upload_to_bq=upload_to_bq)
 
@@ -616,6 +555,7 @@ def main(upload_to_bq: bool = False) -> int:
 
 
 if __name__ == "__main__":
+    # setter opp argumenter til kommandolinjen for å kjøre programmet lokalt med ulike modus
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(prog="Prosjekt_mangfold_main")
@@ -634,6 +574,7 @@ if __name__ == "__main__":
     if args["prod"] is True:
         os.environ["PROD_ENV"] = "true"  # override prod environment variable
 
+    # faktisk program
     retcode = main(upload_to_bq=upload_to_bq)
 
     sys.exit(retcode)
