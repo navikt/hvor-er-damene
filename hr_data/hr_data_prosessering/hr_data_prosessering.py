@@ -60,14 +60,14 @@ def hr_data_map_roles_to_tk_names(input_df: pd.DataFrame, role_column: str = "ro
 
 
 def get_hr_df_relevant_columns(input_df: pd.DataFrame):
-    output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "rolle", "lederniva", "kjonn"]].copy()
+    output_df = input_df[["nav_id", "fodselsdato", "ansatt_fra", "ansatt_til", "lederniva", "kjonn"]].copy()
     input_df = pd.DataFrame()  # blank out original
 
     return output_df
 
 
 def get_tk_df_relevant_columns(input_df: pd.DataFrame):
-    output_df = input_df[["nav_id", "organisasjon_avdeling", "organisasjon_seksjon"]].copy()
+    output_df = input_df[["nav_id", "rolle", "organisasjon_avdeling", "organisasjon_seksjon"]].copy()
     input_df = pd.DataFrame()  # blank out original
 
     return output_df
@@ -158,8 +158,6 @@ def df_aggregate_worked_year_groups(input_df: pd.DataFrame, worked_years_column=
 
 def df_hr_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     """Kjører prosessering på df i riktig rekkefølge"""
-    input_df = input_df.rename(columns={"stillingsnavn": "rolle"})  # TODO: prosseser rolle via stillingskatalog
-    # (ikke så relevant lenger?)
     output_df = get_hr_df_relevant_columns(input_df)  # kjører copy inne
     output_df = df_aggregate_age_from_dateofbirth(output_df)
     output_df = df_aggregate_worked_years_from_timestamps(output_df)

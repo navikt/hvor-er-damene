@@ -45,25 +45,6 @@ def generate_hr_test_data(num_rows: int, id_col: np.ndarray | None = None) -> pd
     """
     rng = np.random.default_rng()
 
-    # vektet med relativt antall av hvor mange som skal dukke opp i test-data
-    test_stillingstitler = {
-        "Utvikler": 100,
-        "Prosjektleder": 10,
-        "Designer": 30,
-        "Systemadministrator": 35,
-        "Dataanalytiker": 100,
-        "Data Scientist": 50,
-        "Data Engineer": 40,
-        "HR-konsulent": 10,
-        "HR-ansvarlig": 5,
-        "Personalleder": 20,
-        "Sikkerhetsansvarlig": 30,
-        "Økonomiansvarlig": 5,
-        "Direktør": 1,
-    }
-    # renormaliser til 0-1
-    test_stillingstitler = {k: v / sum(test_stillingstitler.values()) for k, v in test_stillingstitler.items()}
-
     if id_col is None:
         id_col = generate_row_ids(num_rows)
 
@@ -80,11 +61,6 @@ def generate_hr_test_data(num_rows: int, id_col: np.ndarray | None = None) -> pd
             to_datetime_wrapper("1960-01-01"),
             to_datetime_wrapper("today"),
             n=num_rows,
-        ),
-        "stillingsnavn": rng.choice(
-            list(test_stillingstitler.keys()),
-            size=num_rows,
-            p=list(test_stillingstitler.values()),
         ),
         "lederniva": rng.choice(["1", "2", "3", "4", "5", "6"], size=num_rows, p=[0.0, 0.002, 0.018, 0.03, 0.15, 0.8]),
         "kjonn": rng.choice(["Mann", "Kvinne", "Ukjent"], size=num_rows, p=[0.45, 0.45, 0.10]),
@@ -113,6 +89,25 @@ def generate_tk_test_data(num_rows: int, id_col: np.ndarray | None = None):
 
     # sjekk mot excel fra eksport hos teamkatalogen for å finne kolonner som er nyttige til test
 
+    # vektet med relativt antall av hvor mange som skal dukke opp i test-data
+    test_stillingstitler = {
+        "Utvikler": 100,
+        "Prosjektleder": 10,
+        "Designer": 30,
+        "Systemadministrator": 35,
+        "Dataanalytiker": 100,
+        "Data Scientist": 50,
+        "Data Engineer": 40,
+        "HR-konsulent": 10,
+        "HR-ansvarlig": 5,
+        "Personalleder": 20,
+        "Sikkerhetsansvarlig": 30,
+        "Økonomiansvarlig": 5,
+        "Direktør": 1,
+    }
+    # renormaliser til 0-1
+    test_stillingstitler = {k: v / sum(test_stillingstitler.values()) for k, v in test_stillingstitler.items()}
+
     # avdeling, seksjon noen tilhører er helt tilfeldig enda det burde henge sammen med tittel, men det er ikke så farlig
     test_org_avdelinger = {"Teknologi": 0.4, "HR": 0.2, "Sikkerhet": 0.2, "Økonomi": 0.1, "Administrasjon": 0.1}
 
@@ -126,6 +121,11 @@ def generate_tk_test_data(num_rows: int, id_col: np.ndarray | None = None):
 
     data = {
         "nav_id": id_col,
+        "rolle": rng.choice(
+            list(test_stillingstitler.keys()),
+            size=num_rows,
+            p=list(test_stillingstitler.values()),
+        ),
         "organisasjon_avdeling": rng.choice(
             list(test_org_avdelinger.keys()),
             size=num_rows,
