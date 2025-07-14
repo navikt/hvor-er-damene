@@ -201,6 +201,14 @@ TARGET_TABLES_LIST = list(TARGET_TABLE_TO_SOURCE_TABLE_MAPPING.keys())
 TARGET_TABLE_DF_CONTAINER: dict[str, pd.DataFrame | None] = {}
 # None betyr error i laging av df-en
 
+# tabeller med ansettelsesdata som skal ha unike personer og må filtreres ekstra på pseudonøkkel
+# legger sentralt så man ikke glemmer å oppdatere når man lager ny HR-basert tabell (gjett hvem som har glemt det før)
+TARGET_TABLES_UNIQUE_HR_DATA = [
+    "ansatt_gruppert_hr_avdeling_antall",
+    "ansatt_gruppert_hr_stilling_antall",
+    "ansatt_gruppert_hr_ansatt_stilling_per_seksjon",
+]
+
 
 def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
     output_df = input_df.copy()
@@ -387,13 +395,13 @@ def prod_main(CURRENT_PROJECT_ID: str, PROD_ENV: str | None, DAG_NODE: str | Non
         else:
             # patch for å være sikker på unike verdier med ansettelse,
             # teamkatalog kan ha flere tilknytninger men du kan ikke være ansatt flere steder
-            if target_table in ["ansatt_gruppert_hr_avdeling_antall", "ansatt_gruppert_hr_stilling_antall"]:
+            if target_table in TARGET_TABLES_UNIQUE_HR_DATA:
                 target_table_source = target_table_source.drop_duplicates(subset=["pseudo_key"], keep="first")
             # grupperer på gitte kolonner og teller opp
             # vi ønsker en rad per mulige kombinasjoner av kjønn, aldersgruppe, ansiennitetsgruppe, avdeling, etc.
             # med antall hvor mange som passer i disse kombinasjonene
             grouped_df = target_table_source.groupby(
-                TARGET_TABLE_COLUMNS_TO_GROUP_BY[target_table], dropna=False, as_index=False, observed=True
+                TARGET_TABLE_COLUMNS_TO_GROUP_BY[target_table], dropna=False, as_index=False, observed=True, sort=False
             ).size()
 
             grouped_df = grouped_df.rename(columns={"size": "antall"})  # type: ignore ,wrong inference from .size()
