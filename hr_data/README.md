@@ -37,7 +37,7 @@ Pass på å alltid kjøre  i `hr_data` mappen.
 
 ### Ruff, ty
 
-Prosjektet bruker ruff til automatisk formattering og linting, pluss ty for type-sjekking. Det enkleste er å bruke Visual Studio Code med [ruff](https://github.com/astral-sh/ruff-vscode) og [ty](https://github.com/astral-sh/ty-vscode) extensions installert, da sees advarsler in-line i Vscode. Innstillinger for ruff er i [`ruff.toml`](ruff.toml).
+Prosjektet bruker ruff til automatisk formattering og linting, pluss ty for type-sjekking. Det enkleste er å bruke Visual Studio Code med [ruff](https://github.com/astral-sh/ruff-vscode) og [ty](https://github.com/astral-sh/ty-vscode) extensions installert, da sees advarsler in-line i Vscode. Innstillinger for ruff er i [`hr_data/ruff.toml`](ruff.toml).
 
 ## Videre arbeid
 (Denne listen er skrevet i prioritert rekkefølge)
