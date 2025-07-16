@@ -31,6 +31,7 @@ def n_random_datetimes(start: pd.Timestamp, end: pd.Timestamp, n: int = 10) -> p
 
 
 def generate_row_ids(num_rows: int) -> np.ndarray:
+    """Random IDs that sort of look like IDs that should not be passed on to finished data"""
     rng = np.random.default_rng()
     ids_array = rng.choice(["A", "B", "C", "D"], num_rows) + rng.integers(1000, 9999, num_rows).astype(str)
 

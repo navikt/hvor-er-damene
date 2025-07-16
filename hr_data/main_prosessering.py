@@ -263,7 +263,7 @@ def bigquery_df_process_pipeline(input_df: pd.DataFrame) -> pd.DataFrame:
         logging.warning("Kjønn inneholder NA-verdier, sjekk for feil i pipeline da kildedata skal være filtrert")
         logging.warning("Skriver ut 'Ukjent kjønn' til dashboard")
     if "omrade" in output_df.columns and output_df["omrade"].isna().any():
-        logging.debug("Knytning til teamkatalog har NA-verdier: er som forventet")
+        logging.info("Knytning til teamkatalog har NA-verdier: er som forventet")
 
     # generisk erstatning
     output_df = output_df.fillna("Ukjent")
@@ -296,6 +296,7 @@ def make_and_upload_metadata_table(
         "Status_logging": f"{'Feil skjedde, sjekk logger i airflow' if any_logged_errors else 'Ingen feil logget'}",
         "Datalast_dato_timestamp": pd.Timestamp.now(tz="Europe/Oslo"),
         "Datalast_dato_string": pd.Timestamp.now(tz="Europe/Oslo").strftime("%Y-%m-%d %H:%M:%S%z"),
+        # TODO: add a column with info on whether a DAG-node or user uploaded data
     }
 
     metadata_df = pd.DataFrame(metadata_dict, index=[0])

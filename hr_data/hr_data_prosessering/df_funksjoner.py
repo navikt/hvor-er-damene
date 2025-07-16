@@ -7,6 +7,11 @@ import pandas as pd
 
 
 def read_test_data_csv(source_csv_filename: Path, date_column_indexes: list | None = None) -> pd.DataFrame:
+    """
+    Wrapper function with our fixed csv settings
+
+    reads files written with `write_test_data_csv`
+    """
     if date_column_indexes is None:
         raise ValueError("date_column_indexes must be provided as a list of column indexes in target csv file (0-indexed)")
 
@@ -24,6 +29,7 @@ def read_test_data_csv(source_csv_filename: Path, date_column_indexes: list | No
 
 
 def write_test_data_csv(df: pd.DataFrame, target_csv_filename: Path) -> None:
+    """Wrapper function with our fixed csv settings"""
     df.to_csv(target_csv_filename, index=False, sep=";", quoting=1, header=True)
 
     return None
