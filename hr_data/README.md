@@ -7,7 +7,7 @@ Se også [`README.md`](../README.md) for over-prosjektet, og de relaterte sommer
 
 ## Datalast
 ### Kilde
-Data hentes fra HR-data i Oracle datavarehus. Se Python-skriptene [`daglig_hr_data_til_bq.py`](../dags/daglig_hr_data_til_bq.py) og [`hr_data_til_bq.py`](hr_data_til_bq.py).
+Data hentes fra HR-data i Oracle datavarehus. Se Python-skriptene [`daglig_hr_data_til_bq.py`](../dags/daglig_hr_data_til_bq.py) og [`hr_data/hr_data_til_bq.py`](hr_data_til_bq.py).
 
 ### Tabeller
 Nye tabeller som oprettes ligger i BigQuery i Heda sitt prod gcp-prosjekt. 
@@ -31,13 +31,13 @@ Se [`requirements_bq.txt`](../requirements_bq.txt) for nødvendige pakker til `h
 
 ```uv pip install -r ../requirements_bq.txt```
 
-Det er også en egen [`pyproject.toml`](hr_data/pyproject.toml) fil for under-prosjektet.
+Det er også en egen [`hr_data/pyproject.toml`](pyproject.toml) fil for under-prosjektet.
 
 Pass på å alltid kjøre  i `hr_data` mappen.
 
 ### Ruff, ty
 
-Prosjektet bruker ruff til automatisk formattering og linting, pluss ty for type-sjekking. Det enkleste er å bruke Visual Studio Code med [ruff](https://github.com/astral-sh/ruff-vscode) og [ty](https://github.com/astral-sh/ty-vscode) extensions installert, da sees advarsler in-line i Vscode. Innstillinger for ruff er i [`ruff.toml`](hr_data/ruff.toml).
+Prosjektet bruker ruff til automatisk formattering og linting, pluss ty for type-sjekking. Det enkleste er å bruke Visual Studio Code med [ruff](https://github.com/astral-sh/ruff-vscode) og [ty](https://github.com/astral-sh/ty-vscode) extensions installert, da sees advarsler in-line i Vscode. Innstillinger for ruff er i [`ruff.toml`](ruff.toml).
 
 ## Videre arbeid
 (Denne listen er skrevet i prioritert rekkefølge)
@@ -50,9 +50,9 @@ Det er vurdert bruk av Differential Privacy for å pseudonymisere data (se Navs 
 
 Det er vurdert sammenslåing av noen typer grupperinger for å samle små grupper av f. eks. stillinger til en samlet "Annen" gruppe. Dette krever mer gjennomtenkning.
 
-Det er ikke gjort automatisk testing av koden enda, det går an å teste manuelt ved å kjøre de ulike filene i mappen [`hr_data/hr_data_prosessering/`](hr_data/hr_data_prosessering/) og se at de gir forventet output. Det kan være ønskelig med fult dev-prod setup hvor det finnes en dev-versjon av dashboardet som bruker test data som da genereres i [`hr_data/hr_data_prosessering/test_data_generer_i_csv.py`](hr_data/hr_data_prosessering/test_data_generer_i_csv.py). Men dette krever mye mer arbeid på frontend, backend, og bruk av testing i disse, så det er ikke prioritert nå. 
+Det er ikke gjort automatisk testing av koden enda, det går an å teste manuelt ved å kjøre de ulike filene i mappen [`hr_data/hr_data_prosessering/`](hr_data_prosessering/) og se at de gir forventet output. Det kan være ønskelig med fult dev-prod setup hvor det finnes en dev-versjon av dashboardet som bruker test data som da genereres i [`hr_data/hr_data_prosessering/test_data_generer_i_csv.py`](hr_data_prosessering/test_data_generer_i_csv.py). Men dette krever mye mer arbeid på frontend, backend, og bruk av testing i disse, så det er ikke prioritert nå. 
 
-Skriptet [`main_prosessering.py`](hr_data/main_prosessering.py) er lagt opp til dev-prod split, og det er mulig å kjøre dev-versjonen for å laste opp test-data til BigQuery. Denne brukes ikke til noe.
+Skriptet [`hr_data/main_prosessering.py`](main_prosessering.py) er lagt opp til dev-prod split, og det er mulig å kjøre dev-versjonen for å laste opp test-data til BigQuery. Denne brukes ikke til noe.
 
 En del funksjoner brukes ikke lenger, og format på data har endret seg. Trenger gjennomgang av `hr_data/hr_data_prosessering/` for å rengjøre litt.
 
@@ -73,7 +73,7 @@ Noen spredte notater om dataen og kildene.
 #### Unikhet
 - Data for ansettelse skal være unik når det er valgt ut ut unike pseudonøkler, og én person skal bare ha én seksjonstilknytning og én stilling (stillingsnavn).
 - Data for teamkatalogen er *ikke* unik, så det er mulig å ha flere tilknytninger. Derfor er det ikke filtrert på pseudonøkler i tabeller for teamkatalogen.
-- Det er *ikke* nok å bruke `DISTINCT(pseudo_key)` i SQL-spørringer for å velge personer en gang. Det er derfor gjort ekstra filtrering med pandas `.drop_duplicates(subset=["pseudo_key"], keep="first")` for tabeller med ansettelsesdata. Om det legges til en ny tabell som skal inneholde hr-data blir optellingen feil om man glemmer å legge til tabellen i listen `TARGET_TABLES_UNIQUE_HR_DATA` i [`main_prosessering.py`](hr_data/main_prosessering.py).
+- Det er *ikke* nok å bruke `DISTINCT(pseudo_key)` i SQL-spørringer for å velge personer en gang. Det er derfor gjort ekstra filtrering med pandas `.drop_duplicates(subset=["pseudo_key"], keep="first")` for tabeller med ansettelsesdata. Om det legges til en ny tabell som skal inneholde hr-data blir optellingen feil om man glemmer å legge til tabellen i listen `TARGET_TABLES_UNIQUE_HR_DATA` i [`hr_data/main_prosessering.py`](main_prosessering.py).
 - Teamkatalog-data har ikke denne filtreringen for å beholde ekstra tilknytninger. Ikke gjør opptellinger som skal representere personer på teamkatalog-data.
 
 #### NA-verdier
@@ -90,5 +90,5 @@ Noen spredte notater om dataen og kildene.
 #### main_prosessering.py
 - Hovedfilen for prossesering av data, den er lagt opp med SETTINGS øverst i filen. Kan vurdere å splitte til en egen fil.
 - Basis-definisjoner som gjøres er ikke under `if __main__` slik at de kan importeres i andre filer.
-- Funksjon for å generere metadata og hoved-flyten (pipeline) for prosessering er definert i denne filen for å holde de sentralt. Støttefunksjoner er i [`hr_data_prosessering/`](hr_data/hr_data_prosessering/).
+- Funksjon for å generere metadata og hoved-flyten (pipeline) for prosessering er definert i denne filen for å holde de sentralt. Støttefunksjoner er i [`hr_data/hr_data_prosessering/`](hr_data_prosessering/).
 - `main()`funksjonen detekterer environment (basert på eksistens av env variabel for PROD) og velger enten `dev_main()` eller `prod_main()`. Prod-versjonen kjører ekte data. Det er mulig å overstyre og kjøre prod-versjonen med flagg i kommando-linjen, se nederst i filen. Man må være autentisert med BigQuery (`gcloud auth application-default login`) for å kunne hente inn ekte data.
