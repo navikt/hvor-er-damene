@@ -55,6 +55,48 @@ def nan_to_user_friendly_string(input_df: pd.DataFrame) -> pd.DataFrame:
     return input_df
 
 
+def df_combine_small_groups(
+    input_df: pd.DataFrame,
+    *,
+    cat_to_combine_column_name: str = "Kategori",
+    counts_column_name: str = "antall",
+    threshold: int = 5,
+    new_combined_value_name: str = "Annen",
+) -> pd.DataFrame:
+    """
+    Kombiner grupper som til sammen har for få personer (under treshold) til en "Annen" gruppe
+
+    Funker bare for kolonner med str verdier
+
+    Vi tilgjengeligjør uansett ikke data for veldig små grupper, så kan slå sammen noen typer kategorier
+
+    input_df burde være gruppert allerede, med en kolonne for antall personer i grupperingen (counts_column_name)
+
+    threshold: antall personer som må være i gruppen (sum) for at den skal unngå sammenslåing
+    """
+    # TODO: ferdigstill og faktisk bruk i koden
+    # grupperer videre for å finne antall personer i gruppen totalt
+    # (vi slår nå sammen alle kolonner som IKKE er cat_to_combine_column)
+    category_counts_df = (
+        input_df[[cat_to_combine_column_name, counts_column_name]]
+        .groupby([cat_to_combine_column_name], as_index=False, observed=True, dropna=False, sort=False)
+        .sum()
+    )
+
+    # velg ut bare de små gruppene
+    small_groups_index = category_counts_df[category_counts_df[counts_column_name] < threshold].index
+    small_groups_df = category_counts_df.loc[small_groups_index]
+
+    # setter verdien alle steder vi finner igjen de små kategoriene til den nye "annet" verdien
+    small_groups_series = small_groups_df[cat_to_combine_column_name]
+    input_df.loc[input_df[cat_to_combine_column_name].isin(small_groups_series), cat_to_combine_column_name] = (
+        new_combined_value_name
+    )
+    # burde beholde velferdsdirektør
+
+    return input_df
+
+
 def df_map_stillingsniva_til_titler(input_df: pd.DataFrame, lederniva_column: str = "lederniva") -> pd.DataFrame:
     """
     Gjør om integers i dataen for ledernivå til brukervennlig tekst
