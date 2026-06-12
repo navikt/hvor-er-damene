@@ -3,9 +3,11 @@ from datetime import date
 
 from funksjoner import create_client, get_teamkatalogen_data, write_to_BQ
 
-PROJECT_ID = 'heda-prod-2664'
-SA_KEY_NAME = 'heda-access-key'
-DATASET = 'teamkatalogen'
+PROJECT_ID = "heda-prod-2664"
+SA_KEY_NAME = "heda-access-key"
+DATASET = "teamkatalogen"
+
+
 def main():
 
     # Create BigQuery client
@@ -15,7 +17,9 @@ def main():
     this_month = date.today().replace(day=1)
     query = f"SELECT distinct lastet_dato FROM `{PROJECT_ID}.{DATASET}.monthly_snapshot_raw`"
     ld_df = bq_client.query(query).to_dataframe()
-    ld_df['lastet_dato'] = pd.to_datetime(ld_df['lastet_dato'], format='%Y-%m-%d').dt.date
+    ld_df["lastet_dato"] = pd.to_datetime(
+        ld_df["lastet_dato"], format="%Y-%m-%d"
+    ).dt.date
     if this_month in ld_df.lastet_dato.values:
         print("month already loaded")
     else:
@@ -23,15 +27,35 @@ def main():
 
         # Get data from Teamkatalogen
         df = get_teamkatalogen_data()
-        df = df[['Tilknyttning', 'Seksjon', 'Klynge', 'Team', 'Ident', 'Fornavn',
-       'Etternavn', 'Type', 'Roller', 'Annet', 'Epost', 'Startdato',
-       'Sluttdato']]
+        df = df[
+            [
+                "Tilknyttning",
+                "Seksjon",
+                "Klynge",
+                "Team",
+                "Ident",
+                "Fornavn",
+                "Etternavn",
+                "Type",
+                "Roller",
+                "Annet",
+                "Epost",
+                "Startdato",
+                "Sluttdato",
+            ]
+        ]
         # Process data
-        df['lastet_dato'] = date.today().replace(day=1)
-        df.rename(columns={'Seksjon': 'Omraade'}, inplace=True)
+        df["lastet_dato"] = date.today().replace(day=1)
+        df.rename(columns={"Seksjon": "Omraade"}, inplace=True)
 
         # Write data to BigQuery
-        write_to_BQ(client=bq_client, table_name="monthly_snapshot_raw", dframe=df, dataset=DATASET)
+        write_to_BQ(
+            client=bq_client,
+            table_name="monthly_snapshot_raw",
+            dframe=df,
+            dataset=DATASET,
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
