@@ -11,7 +11,11 @@ default_args = {
     "depends_on_past": False,
 }
 
-allowlist = ["secretmanager.googleapis.com", "bigquery.googleapis.com", "teamkatalog-api.intern.nav.no"]
+allowlist = [
+    "secretmanager.googleapis.com",
+    "bigquery.googleapis.com",
+    "teamkatalog-api.intern.nav.no",
+]
 
 with DAG(
     dag_name,
@@ -26,7 +30,7 @@ with DAG(
         branch="main",
         slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path="requirements.txt",
+        requirements_path="requirements_bq.txt",
     )
     process_snapshot = python_operator(
         dag=dag,
@@ -36,7 +40,7 @@ with DAG(
         branch="main",
         slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path="requirements.txt",
+        requirements_path="requirements_bq.txt",
     )
     aggregate = python_operator(
         dag=dag,
@@ -46,7 +50,7 @@ with DAG(
         branch="main",
         slack_channel="#team-heda",
         allowlist=allowlist,
-        requirements_path="requirements.txt",
+        requirements_path="requirements_bq.txt",
     )
 
     make_quarto = quarto_operator(
@@ -63,7 +67,7 @@ with DAG(
             "id": "7ea943c9-ae07-4d75-9b65-d775c05230dc",
             "token": Variable.get("team_token"),
         },
-        requirements_path="requirements.txt",
+        requirements_path="requirements_quarto.txt",
     )
 
 insert_monthly_snapshot_raw >> process_snapshot >> aggregate >> make_quarto
