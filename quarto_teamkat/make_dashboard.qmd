@@ -1,0 +1,49 @@
+---
+title: "Teamkatalogen"
+format:
+  dashboard:
+    embed-resources: true
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+```{python}
+#| include: false
+from role_animation import (
+    growth_summary,
+    load_data,
+    make_animation,
+    make_growth_chart,
+    prepare_data,
+)
+
+data = prepare_data(load_data())
+summary = growth_summary(data)
+```
+
+# Rolehistorikk {scrolling=true}
+
+## Row
+
+```{python}
+#| title: Roller over tid
+make_animation(data).show(auto_play=False)
+```
+
+# Vekst {scrolling=true}
+
+## Row
+
+```{python}
+#| title: Endring fra forste til siste maned
+make_growth_chart(summary).show()
+```
+
+## Row
+
+```{python}
+#| title: Rolleoversikt
+summary.round(1)
+```
