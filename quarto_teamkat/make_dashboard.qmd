@@ -11,39 +11,84 @@ execute:
 
 ```{python}
 #| include: false
-from role_animation import (
+import itables
+import plotly.graph_objects as go
+
+from read_data import (
     growth_summary,
-    load_data,
-    make_animation,
-    make_growth_chart,
-    prepare_data,
+    load_internal_stats,
+    load_omraade_stats,
+    load_rolle_stats,
+    prepare_stats,
 )
 
-data = prepare_data(load_data())
+data = prepare_stats(load_rolle_stats())
 summary = growth_summary(data)
+internal = load_internal_stats()
+omraade_data = prepare_stats(load_omraade_stats(), group_column="Område")
+omraade_summary = growth_summary(omraade_data, group_column="Område")
 ```
 
-# Rolehistorikk {scrolling=true}
+# Oversikt {scrolling=true}
 
 ## Row
 
 ```{python}
-#| title: Roller over tid
-make_animation(data).show(auto_play=False)
+#| title: Folk i teamkatalogen over tid
+figure = go.Figure(
+  data=[
+    go.Bar(
+      x=internal["dato_mnd"],
+      y=internal["antall_totalt"],
+      name="Antall totalt",
+      marker_color="#5c6281",
+      hovertemplate="%{x|%Y-%m}<br>Antall totalt: %{y:,.0f}<extra></extra>",
+    ),
+    go.Scatter(
+      x=internal["dato_mnd"],
+      y=internal["andel_interne"],
+      name="Andel interne (%)",
+      mode="lines+markers",
+      line={"color": "#d94801", "width": 4},
+      marker={"size": 7, "line": {"color": "white", "width": 1}},
+      yaxis="y2",
+      hovertemplate="%{x|%Y-%m}<br>Andel interne: %{y:.1f} %<extra></extra>",
+    ),
+  ],
+  layout=go.Layout(
+    template="plotly_white",
+    xaxis={"title": "Måned", "type": "date"},
+    yaxis={"title": "Antall personer", "rangemode": "tozero"},
+    yaxis2={
+      "title": "Andel interne (%)",
+      "overlaying": "y",
+      "side": "right",
+      "range": [70, 100],
+      "ticksuffix": " %",
+      "showgrid": False,
+    },
+    legend={"orientation": "h", "y": 1.15},
+  ),
+)
+figure.show()
 ```
 
-# Vekst {scrolling=true}
+# Roller {scrolling=true}
 
 ## Row
 
 ```{python}
-#| title: Endring fra forste til siste maned
-make_growth_chart(summary).show()
+#| title: Rolleoversikt, Start = Jan 2023, Siste = Nov 2026
+itables.show(summary.round(1).reset_index())
 ```
+
+# Områder {scrolling=true}
 
 ## Row
 
 ```{python}
-#| title: Rolleoversikt
-summary.round(1)
+#| title: Områdeoversikt, Start = Jan 2023, Siste = Nov 2026
+itables.show(omraade_summary.round(1).reset_index())
 ```
+
+
