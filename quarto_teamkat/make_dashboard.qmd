@@ -67,7 +67,16 @@ figure = go.Figure(
       "ticksuffix": " %",
       "showgrid": False,
     },
-    legend={"orientation": "h", "y": 1.15},
+    legend={
+      "orientation": "h",
+      "entrywidth": 180,
+      "entrywidthmode": "pixels",
+      "x": 0,
+      "xanchor": "left",
+      "y": 1.02,
+      "yanchor": "bottom",
+    },
+    margin={"t": 90},
   ),
 )
 figure.show()
