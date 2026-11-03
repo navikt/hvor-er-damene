@@ -1,22 +1,22 @@
 # hvor-er-damene
-Prosesserer data fra datavarehuset og teamkatalogen for å tilgjengeliggjøre data for å bruke i dashbord om mangfold.
+Dette repoet er arkivert da team Heda er avviklet. Eierskap ble overført til `datafolk` i november 2026 og tabellene ble flyttet til et dataset i BigQuery under `datafolk` sitt prosjekt for ikke å miste historikken. 
 
-[Team Heda](https://teamkatalog.nav.no/team/1ae1604f-1007-4846-9cea-0153a0ad7c8c) er ansvarlig.
+Det ble kjørt en månedlig jobb fra januar 2023 til og med november 2026 som kopierte data fra Nav sin teamkatalog. Resultatet er delt i en [datafortelling](https://data.ansatt.nav.no/quarto/c94d05cf-77dd-44fe-9a20-7aa912c2fc14).
 
-## Datalast
-### Kilde HR data
-Det er noen tabeller som team Sigma i datavarehuset har tilgjengeliggjort som views med tilgang til en egen databasebruker `DVH_SRV_TEAM_HEDA_PY`. Disse blir aggregert og lagt i datasettet `mangfold_processed_data` i bigQuery.
+#### Mapper
+
+| Mappe | Innhold |
+|-------|---------|
+| `dags/` | Airflow-jobben som styrte månedlig innhenting, bearbeiding og aggregering av data, samt oppdatering av datafortellingen. |
+| `javazone/` | Kilder og kode for diagrammer brukt til JavaZone-presentasjonen "Hvor er damene?".  |
+| `navn/` | Navnelister som ble brukt til å supplere prediksjon av kjønn basert på fornavn. |
+| `quarto_heda/` | Quarto-dashboard om kvinneandel i tech, med data fra Teamkatalogen, SSB, Samordna opptak og rekruttering i Nav IT. Avviklet|
+| `quarto_teamkat/` | Quarto-dashboard som viser utviklingen i Teamkatalogen over tid, fordelt på roller og områder, samt andelen interne. |
+| `teamkatalogen_bq/` | Kode for å hente data fra Teamkatalogen, lagre månedlige uttrekk i BigQuery, vaske data, predikere kjønn og lage aggregerte tabeller. |
+
 
 #### Tabeller
-
-#### Skedulering
-Daglig
-
-### Kilde teamkatalogen
-I mappen teamkatalogen_bq blir det kjørt månedlige snapshot av teamkatalogen hentet via deres API. Her finnes det ingen 
-
-#### Tabeller
-Tabellene ligger i BigQuery i Heda sitt prod gcp-prosjekt. Datasettet heter `teamkatalogen`, og her ligger følgende tabeller:
+Tabellene ligger i BigQuery i `datafolk` sitt prod gcp-prosjekt, og her ligger følgende tabeller:
 
 | Tabell               | Beskrivelse                                 |
 |----------------------|---------------------------------------------|
@@ -25,20 +25,3 @@ Tabellene ligger i BigQuery i Heda sitt prod gcp-prosjekt. Datasettet heter `tea
 | omraade_rolle_stats | Aggregerte data på måned, område og rolle   |
 | omraade_stats | Aggregerte data på måned og område          |
 | rolle_stats | Aggregerte data på måned og rolle           |
-
-
-#### Skedulering
-Datalasten kjøres månedlig via Heda sin [airflow](https://heda.airflow.knada.io/).
-Pga at lasten trenger tilgang til teamkatalogen, kjøres den i Knada sitt miljø.
-
-### Servicebruker
-Vi har opprettet egen servicebruker i gcp `heda-access`, som har fått BigQuery Admin-rolle i Heda sitt gcp-prosjekt. Nøkkel for denne servicebrukeren ligger i Google Secret Manager.
-
-## Dashbord
-
-## Quarto
-Vi har et eget [dashbord](https://data.ansatt.nav.no/story/7ea943c9-ae07-4d75-9b65-d775c05230dc) for å visualisere dataene.
-
-Kjør `quarto preview dashboard.qmd` for å se dashbordet lokalt.
-
-Kjør så `publish_story.py` for å publisere dashbordet til datamarkedsplassen.
